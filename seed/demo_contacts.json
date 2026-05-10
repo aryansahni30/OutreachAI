@@ -1,0 +1,60 @@
+{
+  "salesforce": [
+    {
+      "name": "Sarah Chen",
+      "title": "VP of AI Platform Engineering",
+      "email": "sarah.chen@salesforce.com",
+      "linkedin_url": "https://linkedin.com/in/sarahchen-ai"
+    },
+    {
+      "name": "Marcus Rivera",
+      "title": "Director of Machine Learning",
+      "email": "marcus.rivera@salesforce.com",
+      "linkedin_url": "https://linkedin.com/in/marcusrivera"
+    }
+  ],
+  "stripe": [
+    {
+      "name": "Emily Zhang",
+      "title": "Engineering Manager, ML Infrastructure",
+      "email": "emily.zhang@stripe.com",
+      "linkedin_url": "https://linkedin.com/in/emilyzhang-stripe"
+    },
+    {
+      "name": "David Park",
+      "title": "Head of Developer Experience",
+      "email": "david.park@stripe.com",
+      "linkedin_url": "https://linkedin.com/in/davidpark-dx"
+    }
+  ],
+  "anthropic": [
+    {
+      "name": "Rachel Kim",
+      "title": "Research Engineering Lead",
+      "email": "rachel.kim@anthropic.com",
+      "linkedin_url": "https://linkedin.com/in/rachelkim-ml"
+    },
+    {
+      "name": "James Liu",
+      "title": "Head of Applied AI",
+      "email": "james.liu@anthropic.com",
+      "linkedin_url": "https://linkedin.com/in/jamesliu-ai"
+    }
+  ],
+  "datadog": [
+    {
+      "name": "Alex Thompson",
+      "title": "VP of Engineering",
+      "email": "alex.thompson@datadog.com",
+      "linkedin_url": "https://linkedin.com/in/alexthompson-eng"
+    }
+  ],
+  "notion": [
+    {
+      "name": "Priya Patel",
+      "title": "Engineering Manager, AI Features",
+      "email": "priya.patel@notion.so",
+      "linkedin_url": "https://linkedin.com/in/priyapatel-notion"
+    }
+  ]
+}
