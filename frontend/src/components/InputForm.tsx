@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ArrowRight, Building2, FileText, Mail, Target, User } from 'lucide-react';
 import type { OutreachRequest } from '../types';
 
 interface InputFormProps {
@@ -27,72 +28,103 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
   const isValid = company.trim() && resumeText.trim() && senderName.trim() && senderEmail.trim();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit}>
+      <div className="rounded-2xl bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] p-6 sm:p-8 space-y-6 gradient-border">
+        {/* Name + Email row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              <User size={14} />
+              Your Name
+            </label>
+            <input
+              type="text"
+              value={senderName}
+              onChange={(e) => setSenderName(e.target.value)}
+              placeholder="Aryan Sahni"
+              className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]/40 transition-all"
+            />
+          </div>
+          <div>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              <Mail size={14} />
+              Your Email
+            </label>
+            <input
+              type="email"
+              value={senderEmail}
+              onChange={(e) => setSenderEmail(e.target.value)}
+              placeholder="aryan@example.com"
+              className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]/40 transition-all"
+            />
+          </div>
+        </div>
+
+        {/* Company */}
         <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-1.5">Your Name</label>
+          <label className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+            <Building2 size={14} />
+            Target Company
+          </label>
           <input
             type="text"
-            value={senderName}
-            onChange={(e) => setSenderName(e.target.value)}
-            placeholder="Aryan Sahni"
-            className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            placeholder="Salesforce"
+            className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]/40 transition-all"
           />
         </div>
+
+        {/* Goal */}
         <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-1.5">Your Email</label>
+          <label className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+            <Target size={14} />
+            Goal
+            <span className="text-[var(--color-text-muted)] font-normal">(optional)</span>
+          </label>
           <input
-            type="email"
-            value={senderEmail}
-            onChange={(e) => setSenderEmail(e.target.value)}
-            placeholder="aryan@example.com"
-            className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            type="text"
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+            placeholder="Applying for ML Engineer role"
+            className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]/40 transition-all"
           />
         </div>
-      </div>
 
-      <div>
-        <label className="block text-sm font-medium text-zinc-300 mb-1.5">Target Company</label>
-        <input
-          type="text"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-          placeholder="Salesforce"
-          className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      </div>
+        {/* Resume */}
+        <div>
+          <label className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+            <FileText size={14} />
+            Resume / Background
+          </label>
+          <textarea
+            value={resumeText}
+            onChange={(e) => setResumeText(e.target.value)}
+            placeholder="Paste your resume or describe your background, skills, and experience..."
+            rows={5}
+            className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]/40 transition-all resize-none leading-relaxed"
+          />
+        </div>
 
-      <div>
-        <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-          Goal <span className="text-zinc-500">(optional)</span>
-        </label>
-        <input
-          type="text"
-          value={goal}
-          onChange={(e) => setGoal(e.target.value)}
-          placeholder="Applying for ML Engineer role"
-          className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={!isValid || isLoading}
+          className="w-full py-3.5 px-4 rounded-xl font-semibold text-white transition-all cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2 animated-gradient disabled:opacity-40 disabled:animation-none hover:shadow-[0_0_30px_-5px_rgba(37,99,235,0.4)]"
+        >
+          {isLoading ? (
+            <>
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Agents Working...
+            </>
+          ) : (
+            <>
+              Find & Reach Out
+              <ArrowRight size={16} />
+            </>
+          )}
+        </button>
       </div>
-
-      <div>
-        <label className="block text-sm font-medium text-zinc-300 mb-1.5">Resume / Background</label>
-        <textarea
-          value={resumeText}
-          onChange={(e) => setResumeText(e.target.value)}
-          placeholder="Paste your resume or describe your background..."
-          rows={6}
-          className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={!isValid || isLoading}
-        className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
-      >
-        {isLoading ? 'Working...' : 'Find & Reach Out'}
-      </button>
     </form>
   );
 }

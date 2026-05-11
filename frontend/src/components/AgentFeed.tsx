@@ -1,3 +1,4 @@
+import { Brain, Cpu, Newspaper, Pen, Search } from 'lucide-react';
 import type { SSEEvent } from '../types';
 
 interface AgentFeedProps {
@@ -5,54 +6,67 @@ interface AgentFeedProps {
   isStreaming: boolean;
 }
 
-const AGENT_COLORS: Record<string, string> = {
-  coordinator: 'text-purple-400',
-  prospect: 'text-cyan-400',
-  research: 'text-amber-400',
-  personalization: 'text-emerald-400',
-  copywriter: 'text-pink-400',
-};
-
-const AGENT_ICONS: Record<string, string> = {
-  coordinator: '\u{1F9E0}',
-  prospect: '\u{1F50D}',
-  research: '\u{1F4F0}',
-  personalization: '\u{1F3AF}',
-  copywriter: '\u{270D}\uFE0F',
+const AGENT_CONFIG: Record<string, { color: string; bg: string; icon: React.ElementType }> = {
+  coordinator: { color: 'text-purple-400', bg: 'bg-purple-500/10', icon: Brain },
+  prospect: { color: 'text-cyan-400', bg: 'bg-cyan-500/10', icon: Search },
+  research: { color: 'text-amber-400', bg: 'bg-amber-500/10', icon: Newspaper },
+  personalization: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', icon: Cpu },
+  copywriter: { color: 'text-pink-400', bg: 'bg-pink-500/10', icon: Pen },
 };
 
 export function AgentFeed({ events, isStreaming }: AgentFeedProps) {
   if (events.length === 0 && !isStreaming) return null;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide">Agent Activity</h3>
-        {isStreaming && (
-          <span className="flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-blue-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+    <div className="rounded-2xl bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-3.5 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="flex gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+          </div>
+          <span className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">
+            Agent Terminal
           </span>
+        </div>
+        {isStreaming && (
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[var(--color-primary-light)] pulse-dot" />
+            <span className="text-xs text-[var(--color-primary-light)] font-medium">Live</span>
+          </div>
         )}
       </div>
 
-      <div className="space-y-1.5 max-h-64 overflow-y-auto">
+      {/* Events */}
+      <div className="p-4 space-y-2 max-h-80 overflow-y-auto font-mono text-[13px]">
         {events
           .filter((e) => e.status !== 'complete')
           .map((event, i) => {
-            const color = AGENT_COLORS[event.agent] || 'text-zinc-400';
-            const icon = AGENT_ICONS[event.agent] || '\u{2699}\uFE0F';
+            const config = AGENT_CONFIG[event.agent] || AGENT_CONFIG.coordinator;
+            const Icon = config.icon;
 
             return (
-              <div key={i} className="flex items-start gap-2 text-sm">
-                <span className="shrink-0">{icon}</span>
-                <span className={`font-medium ${color}`}>
+              <div key={i} className="flex items-start gap-2.5 py-1">
+                <div className={`w-5 h-5 rounded shrink-0 flex items-center justify-center ${config.bg} mt-0.5`}>
+                  <Icon size={11} className={config.color} />
+                </div>
+                <span className={`font-semibold shrink-0 ${config.color}`}>
                   {event.agent}
                 </span>
-                <span className="text-zinc-400">{event.message}</span>
+                <span className="text-[var(--color-text-muted)]">&gt;</span>
+                <span className="text-[var(--color-text-secondary)]">{event.message}</span>
               </div>
             );
           })}
+
+        {/* Blinking cursor when streaming */}
+        {isStreaming && (
+          <div className="flex items-center gap-2 py-1">
+            <span className="w-2 h-4 bg-[var(--color-primary-light)] animate-pulse" />
+          </div>
+        )}
       </div>
     </div>
   );

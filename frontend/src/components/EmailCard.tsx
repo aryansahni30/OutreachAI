@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Check, Copy, Paperclip, Send, X } from 'lucide-react';
 import type { EmailDraft } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -11,10 +12,10 @@ interface EmailCardProps {
   onLoginRequired: () => void;
 }
 
-const TONE_STYLES: Record<string, { label: string; badge: string }> = {
-  casual: { label: 'Casual', badge: 'bg-emerald-500/20 text-emerald-400' },
-  professional: { label: 'Professional', badge: 'bg-blue-500/20 text-blue-400' },
-  concise: { label: 'Concise', badge: 'bg-amber-500/20 text-amber-400' },
+const TONE_STYLES: Record<string, { label: string; badge: string; border: string }> = {
+  casual: { label: 'Casual', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', border: 'hover:border-emerald-500/30' },
+  professional: { label: 'Professional', badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20', border: 'hover:border-blue-500/30' },
+  concise: { label: 'Concise', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20', border: 'hover:border-amber-500/30' },
 };
 
 export function EmailCard({
@@ -40,10 +41,6 @@ export function EmailCard({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleAddAttachment = () => {
-    fileInputRef.current?.click();
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setAttachments((prev) => [...prev, ...files]);
@@ -59,7 +56,6 @@ export function EmailCard({
       onLoginRequired();
       return;
     }
-
     setSending(true);
     setSendError(null);
 
@@ -67,7 +63,6 @@ export function EmailCard({
     formData.append('to_email', recipientEmail);
     formData.append('subject', email.subject);
     formData.append('body', email.body);
-
     for (const file of attachments) {
       formData.append('attachments', file);
     }
@@ -78,12 +73,10 @@ export function EmailCard({
         headers: { Authorization: `Bearer ${sessionToken}` },
         body: formData,
       });
-
       if (!response.ok) {
         const error = await response.json().catch(() => ({ detail: 'Send failed' }));
         throw new Error(error.detail || 'Failed to send');
       }
-
       setSent(true);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Send failed';
@@ -94,32 +87,33 @@ export function EmailCard({
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-3">
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${style.badge}`}>
+    <div className={`rounded-2xl bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] p-5 sm:p-6 transition-all ${style.border}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${style.badge}`}>
           {style.label}
         </span>
-        <span className="text-xs text-zinc-500">{email.word_count} words</span>
+        <span className="text-xs text-[var(--color-text-muted)]">{email.word_count} words</span>
       </div>
 
-      <div className="space-y-2">
+      {/* Email content */}
+      <div className="space-y-3">
         <div>
-          <p className="text-xs text-zinc-500 mb-0.5">To</p>
-          <p className="text-sm text-zinc-400">{recipientEmail}</p>
+          <p className="text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1">To</p>
+          <p className="text-sm text-[var(--color-text-secondary)]">{recipientEmail}</p>
         </div>
         <div>
-          <p className="text-xs text-zinc-500 mb-0.5">Subject</p>
-          <p className="text-sm font-medium text-white">{email.subject}</p>
+          <p className="text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Subject</p>
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">{email.subject}</p>
         </div>
-        <div>
-          <p className="text-xs text-zinc-500 mb-0.5">Body</p>
-          <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">{email.body}</p>
+        <div className="pt-2 border-t border-[var(--color-border-subtle)]">
+          <p className="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">{email.body}</p>
         </div>
       </div>
 
       {/* Attachments */}
       {!sent && (
-        <div className="mt-3">
+        <div className="mt-4">
           <input
             ref={fileInputRef}
             type="file"
@@ -130,15 +124,18 @@ export function EmailCard({
           />
 
           {attachments.length > 0 && (
-            <div className="space-y-1 mb-2">
+            <div className="space-y-1.5 mb-3">
               {attachments.map((file, i) => (
-                <div key={i} className="flex items-center justify-between text-xs bg-zinc-800 rounded px-2 py-1.5">
-                  <span className="text-zinc-300 truncate">{file.name}</span>
+                <div key={i} className="flex items-center justify-between text-xs bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2 text-[var(--color-text-secondary)] truncate">
+                    <Paperclip size={12} />
+                    {file.name}
+                  </div>
                   <button
                     onClick={() => removeAttachment(i)}
-                    className="text-zinc-500 hover:text-red-400 ml-2 shrink-0 cursor-pointer"
+                    className="text-[var(--color-text-muted)] hover:text-red-400 cursor-pointer shrink-0"
                   >
-                    ✕
+                    <X size={14} />
                   </button>
                 </div>
               ))}
@@ -146,39 +143,43 @@ export function EmailCard({
           )}
 
           <button
-            onClick={handleAddAttachment}
-            className="text-xs text-zinc-500 hover:text-zinc-300 cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors cursor-pointer"
           >
-            + Attach resume or cover letter
+            <Paperclip size={12} />
+            Attach resume or cover letter
           </button>
         </div>
       )}
 
-      {/* Error */}
       {sendError && (
-        <p className="mt-2 text-xs text-red-400">{sendError}</p>
+        <p className="mt-3 text-xs text-red-400">{sendError}</p>
       )}
 
       {/* Actions */}
-      <div className="mt-4 flex gap-2">
+      <div className="mt-5 flex gap-2.5">
         <button
           onClick={handleCopy}
-          className="flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-colors cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+          className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl transition-all cursor-pointer bg-[var(--color-surface)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-default)] hover:text-[var(--color-text-primary)] flex items-center justify-center gap-2"
         >
-          {copied ? 'Copied!' : 'Copy'}
+          {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
         </button>
 
         {sent ? (
-          <div className="flex-1 py-2 px-3 text-sm font-medium rounded-lg bg-emerald-500/20 text-emerald-400 text-center">
-            Sent ✓
+          <div className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center gap-2">
+            <Check size={14} /> Sent
           </div>
         ) : (
           <button
             onClick={handleSend}
             disabled={sending}
-            className="flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-colors cursor-pointer bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white"
+            className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl transition-all cursor-pointer animated-gradient text-white disabled:opacity-40 hover:shadow-[0_0_20px_-5px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2"
           >
-            {sending ? 'Sending...' : 'Send Email'}
+            {sending ? (
+              <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending</>
+            ) : (
+              <><Send size={14} /> Send Email</>
+            )}
           </button>
         )}
       </div>
