@@ -1,4 +1,4 @@
-import { ExternalLink, Linkedin, Mail, User } from 'lucide-react';
+import { ExternalLink, Link2, Mail, User } from 'lucide-react';
 import type { Contact } from '../types';
 
 interface ContactCardProps {
@@ -31,7 +31,7 @@ export function ContactCard({ contact }: ContactCardProps) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-sm text-[var(--color-primary-light)] hover:text-[var(--color-primary)] transition-colors"
                 >
-                  <Linkedin size={13} />
+                  <Link2 size={13} />
                   LinkedIn
                   <ExternalLink size={11} />
                 </a>
