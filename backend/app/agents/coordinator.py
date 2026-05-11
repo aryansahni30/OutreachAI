@@ -1,4 +1,6 @@
+import asyncio
 import json
+import traceback
 from pathlib import Path
 
 from app.agents.copywriter import run_copywriter_agent
@@ -34,6 +36,19 @@ def _load_demo_contacts(company: str) -> dict:
     return {"contacts": data[first_key]}
 
 
+async def _safe_run(coro, fallback, job_id: str, agent_name: str):
+    """Run agent with error handling — return fallback on failure."""
+    try:
+        return await coro
+    except Exception as e:
+        traceback.print_exc()
+        await sse_manager.emit(
+            job_id=job_id, agent=agent_name, status="done",
+            message=f"{agent_name} failed: {str(e)[:100]}. Continuing...",
+        )
+        return fallback
+
+
 async def run_outreach(
     company: str,
     resume_text: str,
@@ -43,18 +58,12 @@ async def run_outreach(
     job_id: str,
 ) -> OutreachResult:
     """
-    Full coordinator flow — 8 agents:
-    1. Prospect Agent → find contacts
-    2. Research Agent → company intel
-    3. Gap Analyzer → resume vs job requirements (parallel with #4)
-    4. Warm Path Finder → shared history (parallel with #3)
-    5. Personalization Agent → match angles
-    6. Copywriter Agent → draft emails
-    7. Email Scorer → predict response rates
-    8. Follow-up Generator → 3-email sequence
+    Full coordinator flow — 8 agents with graceful failure handling.
+    Critical agents: Prospect, Research, Personalization, Copywriter
+    Optional agents: Gap Analyzer, Warm Path, Scorer, Follow-up
     """
 
-    # --- Step 1: Prospect ---
+    # --- Step 1: Prospect (critical) ---
     await sse_manager.emit(
         job_id=job_id, agent="coordinator", status="running",
         message=f"Finding the right contact at {company}...",
@@ -91,7 +100,7 @@ async def run_outreach(
         message=f"Top contact: {contact_summary}" + (" (demo)" if using_demo else ""),
     )
 
-    # --- Step 2: Research ---
+    # --- Step 2: Research (critical) ---
     await sse_manager.emit(
         job_id=job_id, agent="coordinator", status="running",
         message=f"Researching {company}...",
@@ -111,21 +120,24 @@ async def run_outreach(
         message=f"Research quality: {research_quality} ({len(findings)} findings)",
     )
 
-    # --- Step 3 & 4: Gap Analysis + Warm Path (parallel) ---
+    # --- Step 3 & 4: Gap Analysis + Warm Path (parallel, optional) ---
     await sse_manager.emit(
         job_id=job_id, agent="coordinator", status="running",
         message="Analyzing resume gaps and finding warm paths...",
     )
 
-    import asyncio
-    gap_task = asyncio.create_task(
-        run_gap_analyzer(resume_text=resume_text, research=research_result, job_id=job_id)
+    gap_task = _safe_run(
+        run_gap_analyzer(resume_text=resume_text, research=research_result, job_id=job_id),
+        fallback={"gaps": [], "strengths": [], "strategy": "", "match_percentage": 0},
+        job_id=job_id, agent_name="gap_analyzer",
     )
-    warm_task = asyncio.create_task(
+    warm_task = _safe_run(
         run_warm_path_finder(
             resume_text=resume_text, contact=top_contact,
             research=research_result, job_id=job_id,
-        )
+        ),
+        fallback={"warm_paths": [], "warmest_path": None, "is_warm": False},
+        job_id=job_id, agent_name="warm_path",
     )
 
     gap_result, warm_result = await asyncio.gather(gap_task, warm_task)
@@ -138,7 +150,7 @@ async def run_outreach(
         message=f"Resume match: {match_pct}% | Warm connection: {'Yes' if is_warm else 'No'}",
     )
 
-    # --- Step 5: Personalization ---
+    # --- Step 5: Personalization (critical) ---
     await sse_manager.emit(
         job_id=job_id, agent="coordinator", status="running",
         message="Matching your background to research...",
@@ -155,10 +167,10 @@ async def run_outreach(
     angles = personalization_result.get("angles", [])
     await sse_manager.emit(
         job_id=job_id, agent="coordinator", status="running",
-        message=f"Found {len(angles)} personalization angles. Drafting emails...",
+        message=f"Found {len(angles)} angles. Drafting emails...",
     )
 
-    # --- Step 6: Copywriter ---
+    # --- Step 6: Copywriter (critical) ---
     copywriter_result = await run_copywriter_agent(
         personalization=personalization_result,
         contact=top_contact,
@@ -169,29 +181,32 @@ async def run_outreach(
 
     emails = copywriter_result.get("emails", [])
 
-    # --- Step 7 & 8: Scorer + Follow-up (parallel) ---
+    # --- Step 7 & 8: Scorer + Follow-up (parallel, optional) ---
     await sse_manager.emit(
         job_id=job_id, agent="coordinator", status="running",
         message="Scoring emails and generating follow-up sequence...",
     )
 
-    # Pick the best email for follow-up (professional tone preferred)
     best_email = next(
         (e for e in emails if e.get("tone") == "professional"),
         emails[0] if emails else {},
     )
 
-    score_task = asyncio.create_task(
+    score_task = _safe_run(
         run_scorer_agent(
             emails=emails, contact=top_contact,
             personalization=personalization_result, job_id=job_id,
-        )
+        ),
+        fallback={"scores": []},
+        job_id=job_id, agent_name="scorer",
     )
-    followup_task = asyncio.create_task(
+    followup_task = _safe_run(
         run_followup_agent(
             initial_email=best_email, contact=top_contact,
             personalization=personalization_result, job_id=job_id,
-        )
+        ),
+        fallback={"sequence": []},
+        job_id=job_id, agent_name="followup",
     )
 
     score_result, followup_result = await asyncio.gather(score_task, followup_task)
@@ -217,7 +232,7 @@ async def run_outreach(
 
     await sse_manager.emit(
         job_id=job_id, agent="coordinator", status="complete",
-        message=f"Done! {len(emails)} drafts, {len(followup_result.get('sequence', []))} follow-ups ready.",
+        message=f"Done! {len(emails)} drafts ready.",
         result=result.model_dump(),
     )
 

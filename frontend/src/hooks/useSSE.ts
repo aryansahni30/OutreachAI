@@ -17,6 +17,8 @@ export function useSSE(): UseSSEReturn {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sourceRef = useRef<EventSource | null>(null);
+  const errorCountRef = useRef(0);
+  const doneRef = useRef(false);
 
   const disconnect = useCallback(() => {
     if (sourceRef.current) {
@@ -33,16 +35,22 @@ export function useSSE(): UseSSEReturn {
       setResult(null);
       setError(null);
       setIsStreaming(true);
+      errorCountRef.current = 0;
+      doneRef.current = false;
 
       const source = createSSEConnection(jobId);
       sourceRef.current = source;
 
       source.onmessage = (event) => {
         try {
+          // Reset error count on successful message
+          errorCountRef.current = 0;
+
           const data: SSEEvent = JSON.parse(event.data);
           setEvents((prev) => [...prev, data]);
 
           if (data.status === 'complete' && data.result) {
+            doneRef.current = true;
             setResult(data.result);
             setIsStreaming(false);
             source.close();
@@ -59,13 +67,18 @@ export function useSSE(): UseSSEReturn {
       };
 
       source.onerror = () => {
-        // Only show error if we haven't completed successfully
-        if (sourceRef.current?.readyState === EventSource.CLOSED) {
-          return;
+        // Don't error if we already completed
+        if (doneRef.current) return;
+
+        errorCountRef.current += 1;
+
+        // EventSource auto-reconnects. Only give up after 5 consecutive errors.
+        if (errorCountRef.current >= 5) {
+          setError('Connection lost. Please try again.');
+          setIsStreaming(false);
+          source.close();
         }
-        setError('Connection lost. Try again.');
-        setIsStreaming(false);
-        source.close();
+        // Otherwise let EventSource auto-reconnect
       };
     },
     [disconnect]

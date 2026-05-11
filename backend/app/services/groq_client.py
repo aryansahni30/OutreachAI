@@ -1,7 +1,8 @@
+import asyncio
 import json
 from typing import Any
 
-from groq import AsyncGroq
+from groq import AsyncGroq, RateLimitError
 
 from app.config import settings
 
@@ -15,6 +16,19 @@ def get_groq_client() -> AsyncGroq:
     return _client
 
 
+async def _call_groq_with_retry(client: AsyncGroq, kwargs: dict, max_retries: int = 3) -> Any:
+    """Call Groq API with retry on rate limit errors."""
+    for attempt in range(max_retries):
+        try:
+            return await client.chat.completions.create(**kwargs)
+        except RateLimitError:
+            if attempt < max_retries - 1:
+                wait = (attempt + 1) * 5  # 5s, 10s, 15s
+                await asyncio.sleep(wait)
+            else:
+                raise
+
+
 async def chat_with_tools(
     system_prompt: str,
     messages: list[dict[str, Any]],
@@ -26,18 +40,7 @@ async def chat_with_tools(
 ) -> str:
     """
     ReAct loop: call Groq, execute tool calls, loop until final text response.
-
-    Args:
-        system_prompt: Agent system prompt
-        messages: Conversation messages
-        tools: Groq function definitions
-        tool_handlers: Map of function_name -> async callable
-        model: Groq model ID
-        max_iterations: Safety cap on tool-call loops
-        temperature: LLM temperature
-
-    Returns:
-        Final text response from LLM
+    Includes retry with backoff for rate limits.
     """
     client = get_groq_client()
     all_messages = [{"role": "system", "content": system_prompt}, *messages]
@@ -52,7 +55,7 @@ async def chat_with_tools(
             kwargs["tools"] = tools
             kwargs["tool_choice"] = "auto"
 
-        response = await client.chat.completions.create(**kwargs)
+        response = await _call_groq_with_retry(client, kwargs)
         message = response.choices[0].message
 
         # No tool calls — final response
