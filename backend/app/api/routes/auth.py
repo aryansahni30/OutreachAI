@@ -1,71 +1,55 @@
 import secrets
-from urllib.parse import urlencode
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 
 from app.config import settings
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 
-SCOPES = [
-    "openid",
-    "email",
-    "profile",
-    "https://www.googleapis.com/auth/gmail.send",
-]
-
 # In-memory session store (v1 — move to DB/Redis for production)
 _sessions: dict[str, dict] = {}
-# CSRF state tokens
-_pending_states: set[str] = set()
 
 
-@router.get("/google/login")
-async def google_login():
-    """Redirect user to Google OAuth consent screen."""
-    state = secrets.token_urlsafe(32)
-    _pending_states.add(state)
+class GoogleAuthRequest(BaseModel):
+    code: str
+    redirect_uri: str
 
-    params = {
+
+@router.get("/google/config")
+async def google_config():
+    """Return OAuth config for frontend to initiate the flow."""
+    return {
         "client_id": settings.google_client_id,
-        "redirect_uri": settings.google_redirect_uri,
-        "response_type": "code",
-        "scope": " ".join(SCOPES),
-        "access_type": "offline",
-        "prompt": "consent",
-        "state": state,
+        "scopes": "openid email profile https://www.googleapis.com/auth/gmail.send",
     }
-    return RedirectResponse(f"{GOOGLE_AUTH_URL}?{urlencode(params)}")
 
 
-@router.get("/google/callback")
-async def google_callback(code: str, state: str):
-    """Handle Google OAuth callback — exchange code for tokens."""
-    if state not in _pending_states:
-        raise HTTPException(status_code=400, detail="Invalid state parameter")
-    _pending_states.discard(state)
-
-    # Exchange code for tokens
+@router.post("/google/exchange")
+async def google_exchange(body: GoogleAuthRequest):
+    """Exchange auth code from frontend for tokens. No redirects needed."""
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
             GOOGLE_TOKEN_URL,
             data={
                 "client_id": settings.google_client_id,
                 "client_secret": settings.google_client_secret,
-                "code": code,
+                "code": body.code,
                 "grant_type": "authorization_code",
-                "redirect_uri": settings.google_redirect_uri,
+                "redirect_uri": body.redirect_uri,
             },
         )
 
         if token_response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to exchange code for tokens")
+            error = token_response.json()
+            raise HTTPException(
+                status_code=400,
+                detail=error.get("error_description", "Failed to exchange code"),
+            )
 
         tokens = token_response.json()
 
@@ -90,9 +74,14 @@ async def google_callback(code: str, state: str):
         "picture": userinfo.get("picture", ""),
     }
 
-    # Redirect to frontend with session token
-    frontend_url = settings.frontend_url
-    return RedirectResponse(f"{frontend_url}?session={session_id}")
+    return {
+        "session_token": session_id,
+        "user": {
+            "email": userinfo.get("email", ""),
+            "name": userinfo.get("name", ""),
+            "picture": userinfo.get("picture", ""),
+        },
+    }
 
 
 @router.get("/me")
