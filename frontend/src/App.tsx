@@ -35,7 +35,7 @@ function App() {
             <div className="w-8 h-8 rounded-lg animated-gradient flex items-center justify-center">
               <Zap size={16} className="text-white" />
             </div>
-            <span className="font-semibold text-lg tracking-tight">Cold Reach</span>
+            <span className="font-semibold text-lg tracking-tight">OutreachAI</span>
           </div>
 
           {user ? (
