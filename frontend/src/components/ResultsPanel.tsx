@@ -4,9 +4,14 @@ import { EmailCard } from './EmailCard';
 
 interface ResultsPanelProps {
   result: OutreachResult;
+  sessionToken: string | null;
+  isLoggedIn: boolean;
+  onLoginRequired: () => void;
 }
 
-export function ResultsPanel({ result }: ResultsPanelProps) {
+export function ResultsPanel({ result, sessionToken, isLoggedIn, onLoginRequired }: ResultsPanelProps) {
+  const recipientEmail = result.contact.email || '';
+
   return (
     <div className="space-y-6">
       {/* Contact */}
@@ -59,7 +64,14 @@ export function ResultsPanel({ result }: ResultsPanelProps) {
         </h3>
         <div className="grid gap-4">
           {result.emails.map((email, i) => (
-            <EmailCard key={i} email={email} />
+            <EmailCard
+              key={i}
+              email={email}
+              recipientEmail={recipientEmail}
+              sessionToken={sessionToken}
+              isLoggedIn={isLoggedIn}
+              onLoginRequired={onLoginRequired}
+            />
           ))}
         </div>
       </div>

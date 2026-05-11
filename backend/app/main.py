@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.auth import router as auth_router
+from app.api.routes.email import router as email_router
 from app.api.routes.outreach import router as outreach_router
 from app.config import settings
 
@@ -40,6 +42,8 @@ app.add_middleware(
 )
 
 
+app.include_router(auth_router)
+app.include_router(email_router)
 app.include_router(outreach_router)
 
 
