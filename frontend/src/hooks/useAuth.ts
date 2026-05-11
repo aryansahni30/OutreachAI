@@ -77,8 +77,8 @@ export function useAuth(): UseAuthReturn {
   const login = useCallback(() => {
     const config = oauthConfig.current;
     if (!config) {
-      // Config not loaded yet — try redirect approach
-      window.location.href = `${API_BASE}/auth/google/login`;
+      // Config not loaded yet — retry fetch then redirect
+      alert('Still loading. Please try again in a moment.');
       return;
     }
 
