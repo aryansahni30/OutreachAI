@@ -38,11 +38,85 @@ export interface EmailDraft {
   word_count: number;
 }
 
+// --- New Features ---
+
+export interface SkillGap {
+  skill: string;
+  severity: string;
+  reframe: string;
+}
+
+export interface SkillStrength {
+  skill: string;
+  relevance: string;
+  priority: number;
+}
+
+export interface GapAnalysis {
+  gaps: SkillGap[];
+  strengths: SkillStrength[];
+  strategy: string;
+  match_percentage: number;
+}
+
+export interface WarmPath {
+  connection: string;
+  type: string;
+  strength: string;
+  suggested_mention: string;
+}
+
+export interface WarmPathResult {
+  warm_paths: WarmPath[];
+  warmest_path: string | null;
+  is_warm: boolean;
+}
+
+export interface ScoreBreakdown {
+  personalization: number;
+  hook: number;
+  value: number;
+  cta: number;
+  readability: number;
+}
+
+export interface EmailScore {
+  tone: string;
+  overall_score: number;
+  predicted_response_rate: string;
+  breakdown: ScoreBreakdown;
+  strengths: string[];
+  improvements: string[];
+  verdict: string;
+}
+
+export interface ScorerResult {
+  scores: EmailScore[];
+}
+
+export interface FollowUpEmail {
+  day: number;
+  subject: string;
+  body: string;
+  word_count: number;
+  strategy: string;
+}
+
+export interface FollowUpResult {
+  sequence: FollowUpEmail[];
+}
+
+// --- Final Output ---
+
 export interface OutreachResult {
   contact: Contact;
   research: ResearchResult;
   personalization: PersonalizationResult;
   emails: EmailDraft[];
+  gap_analysis: GapAnalysis | null;
+  warm_paths: WarmPathResult | null;
+  email_scores: ScorerResult | null;
+  follow_up: FollowUpResult | null;
 }
 
 export interface SSEEvent {

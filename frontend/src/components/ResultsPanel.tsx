@@ -2,6 +2,9 @@ import { Lightbulb, Newspaper } from 'lucide-react';
 import type { OutreachResult } from '../types';
 import { ContactCard } from './ContactCard';
 import { EmailCard } from './EmailCard';
+import { FollowUpTimeline } from './FollowUpTimeline';
+import { GapAnalysisCard } from './GapAnalysisCard';
+import { WarmPathCard } from './WarmPathCard';
 
 interface ResultsPanelProps {
   result: OutreachResult;
@@ -12,6 +15,7 @@ interface ResultsPanelProps {
 
 export function ResultsPanel({ result, sessionToken, isLoggedIn, onLoginRequired }: ResultsPanelProps) {
   const recipientEmail = result.contact.email || '';
+  const scores = result.email_scores?.scores || [];
 
   return (
     <div className="space-y-8">
@@ -22,6 +26,16 @@ export function ResultsPanel({ result, sessionToken, isLoggedIn, onLoginRequired
         </h2>
         <ContactCard contact={result.contact} />
       </div>
+
+      {/* Warm Paths */}
+      {result.warm_paths && result.warm_paths.warm_paths?.length > 0 && (
+        <WarmPathCard result={result.warm_paths} />
+      )}
+
+      {/* Gap Analysis */}
+      {result.gap_analysis && (
+        <GapAnalysisCard analysis={result.gap_analysis} />
+      )}
 
       {/* Research Summary */}
       {result.research?.findings?.length > 0 && (
@@ -69,24 +83,41 @@ export function ResultsPanel({ result, sessionToken, isLoggedIn, onLoginRequired
         </div>
       )}
 
-      {/* Email Drafts */}
+      {/* Email Drafts with Scores */}
       <div>
         <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
           Email Drafts
         </h2>
         <div className="grid gap-4">
-          {result.emails.map((email, i) => (
-            <EmailCard
-              key={i}
-              email={email}
-              recipientEmail={recipientEmail}
-              sessionToken={sessionToken}
-              isLoggedIn={isLoggedIn}
-              onLoginRequired={onLoginRequired}
-            />
-          ))}
+          {result.emails.map((email, i) => {
+            const matchingScore = scores.find((s) => s.tone === email.tone);
+            return (
+              <EmailCard
+                key={i}
+                email={email}
+                recipientEmail={recipientEmail}
+                sessionToken={sessionToken}
+                isLoggedIn={isLoggedIn}
+                onLoginRequired={onLoginRequired}
+                score={matchingScore}
+              />
+            );
+          })}
         </div>
       </div>
+
+      {/* Follow-up Sequence */}
+      {result.follow_up && result.follow_up.sequence?.length > 0 && (
+        <div>
+          <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
+            Follow-up Sequence
+          </h2>
+          <FollowUpTimeline
+            result={result.follow_up}
+            initialSubject={result.emails[0]?.subject || 'Initial outreach'}
+          />
+        </div>
+      )}
     </div>
   );
 }

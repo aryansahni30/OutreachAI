@@ -1,4 +1,4 @@
-import { Brain, Cpu, Newspaper, Pen, Search } from 'lucide-react';
+import { BarChart3, Brain, Calendar, Cpu, Flame, Newspaper, Pen, Search, Shield } from 'lucide-react';
 import type { SSEEvent } from '../types';
 
 interface AgentFeedProps {
@@ -12,6 +12,10 @@ const AGENT_CONFIG: Record<string, { color: string; bg: string; icon: React.Elem
   research: { color: 'text-amber-400', bg: 'bg-amber-500/10', icon: Newspaper },
   personalization: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', icon: Cpu },
   copywriter: { color: 'text-pink-400', bg: 'bg-pink-500/10', icon: Pen },
+  gap_analyzer: { color: 'text-violet-400', bg: 'bg-violet-500/10', icon: Shield },
+  warm_path: { color: 'text-orange-400', bg: 'bg-orange-500/10', icon: Flame },
+  scorer: { color: 'text-blue-400', bg: 'bg-blue-500/10', icon: BarChart3 },
+  followup: { color: 'text-teal-400', bg: 'bg-teal-500/10', icon: Calendar },
 };
 
 export function AgentFeed({ events, isStreaming }: AgentFeedProps) {

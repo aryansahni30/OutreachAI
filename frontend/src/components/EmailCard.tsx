@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Check, Copy, Paperclip, Send, X } from 'lucide-react';
-import type { EmailDraft } from '../types';
+import type { EmailDraft, EmailScore } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -10,6 +10,7 @@ interface EmailCardProps {
   sessionToken: string | null;
   isLoggedIn: boolean;
   onLoginRequired: () => void;
+  score?: EmailScore;
 }
 
 const TONE_STYLES: Record<string, { label: string; badge: string; border: string }> = {
@@ -24,6 +25,7 @@ export function EmailCard({
   sessionToken,
   isLoggedIn,
   onLoginRequired,
+  score,
 }: EmailCardProps) {
   const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState(false);
@@ -88,13 +90,44 @@ export function EmailCard({
 
   return (
     <div className={`rounded-2xl bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] p-5 sm:p-6 transition-all ${style.border}`}>
-      {/* Header */}
+      {/* Header with score */}
       <div className="flex items-center justify-between mb-4">
-        <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${style.badge}`}>
-          {style.label}
-        </span>
-        <span className="text-xs text-[var(--color-text-muted)]">{email.word_count} words</span>
+        <div className="flex items-center gap-2.5">
+          <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${style.badge}`}>
+            {style.label}
+          </span>
+          {score && (
+            <div className="flex items-center gap-1.5">
+              <span className={`text-lg font-bold ${
+                score.overall_score >= 70 ? 'text-emerald-400' :
+                score.overall_score >= 50 ? 'text-amber-400' : 'text-red-400'
+              }`}>{score.overall_score}</span>
+              <span className="text-[10px] text-[var(--color-text-muted)]">/100</span>
+            </div>
+          )}
+        </div>
+        <div className="text-right">
+          {score && (
+            <p className="text-xs font-medium text-[var(--color-primary-light)]">{score.predicted_response_rate} response</p>
+          )}
+          <span className="text-xs text-[var(--color-text-muted)]">{email.word_count} words</span>
+        </div>
       </div>
+
+      {/* Score breakdown */}
+      {score && (
+        <div className="mb-4 p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border-subtle)]">
+          <div className="flex gap-2 mb-2">
+            {Object.entries(score.breakdown).map(([key, val]) => (
+              <div key={key} className="flex-1 text-center">
+                <div className="text-xs font-bold text-[var(--color-text-primary)]">{val}</div>
+                <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)]">{key.slice(0, 4)}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-[var(--color-text-muted)] italic">{score.verdict}</p>
+        </div>
+      )}
 
       {/* Email content */}
       <div className="space-y-3">

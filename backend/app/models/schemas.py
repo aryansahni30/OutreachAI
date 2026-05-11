@@ -31,7 +31,7 @@ class ResearchFinding(BaseModel):
     summary: str
     source_url: str = ""
     suggested_hook: str = ""
-    recency: str = ""  # "this week", "this month", etc.
+    recency: str = ""
 
 
 class ResearchResult(BaseModel):
@@ -47,11 +47,11 @@ class PersonalizationAngle(BaseModel):
 
 class PersonalizationResult(BaseModel):
     angles: list[PersonalizationAngle]
-    research_quality: str = "strong"  # strong | weak
+    research_quality: str = "strong"
 
 
 class EmailDraft(BaseModel):
-    tone: str  # casual | professional | concise
+    tone: str
     subject: str
     body: str
     word_count: int = 0
@@ -61,6 +61,80 @@ class CopywriterResult(BaseModel):
     emails: list[EmailDraft]
 
 
+# --- New Feature: Gap Analysis ---
+
+class SkillGap(BaseModel):
+    skill: str
+    severity: str = "medium"  # low | medium | high
+    reframe: str = ""
+
+
+class SkillStrength(BaseModel):
+    skill: str
+    relevance: str = ""
+    priority: int = 0
+
+
+class GapAnalysis(BaseModel):
+    gaps: list[SkillGap] = []
+    strengths: list[SkillStrength] = []
+    strategy: str = ""
+    match_percentage: int = 0
+
+
+# --- New Feature: Warm Path ---
+
+class WarmPath(BaseModel):
+    connection: str
+    type: str = "indirect"  # direct | indirect | cultural
+    strength: str = "weak"  # strong | medium | weak
+    suggested_mention: str = ""
+
+
+class WarmPathResult(BaseModel):
+    warm_paths: list[WarmPath] = []
+    warmest_path: str | None = None
+    is_warm: bool = False
+
+
+# --- New Feature: Email Score ---
+
+class ScoreBreakdown(BaseModel):
+    personalization: int = 0
+    hook: int = 0
+    value: int = 0
+    cta: int = 0
+    readability: int = 0
+
+
+class EmailScore(BaseModel):
+    tone: str
+    overall_score: int = 0
+    predicted_response_rate: str = ""
+    breakdown: ScoreBreakdown = ScoreBreakdown()
+    strengths: list[str] = []
+    improvements: list[str] = []
+    verdict: str = ""
+
+
+class ScorerResult(BaseModel):
+    scores: list[EmailScore] = []
+
+
+# --- New Feature: Follow-up Sequence ---
+
+class FollowUpEmail(BaseModel):
+    day: int
+    subject: str
+    body: str
+    word_count: int = 0
+    strategy: str = ""
+
+
+class FollowUpResult(BaseModel):
+    sequence: list[FollowUpEmail] = []
+
+
 # --- Final Output ---
 
 class OutreachResult(BaseModel):
@@ -68,6 +142,10 @@ class OutreachResult(BaseModel):
     research: ResearchResult
     personalization: PersonalizationResult
     emails: list[EmailDraft]
+    gap_analysis: GapAnalysis | None = None
+    warm_paths: WarmPathResult | None = None
+    email_scores: ScorerResult | None = None
+    follow_up: FollowUpResult | None = None
 
 
 # --- API Response ---
