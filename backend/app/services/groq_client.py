@@ -2,7 +2,7 @@ import asyncio
 import json
 from typing import Any
 
-from groq import AsyncGroq, RateLimitError
+from groq import AsyncGroq, BadRequestError, RateLimitError
 
 from app.config import settings
 
@@ -59,7 +59,18 @@ async def chat_with_tools(
             kwargs["tools"] = tools
             kwargs["tool_choice"] = "auto"
 
-        response = await _call_groq_with_retry(client, kwargs)
+        try:
+            response = await _call_groq_with_retry(client, kwargs)
+        except BadRequestError as e:
+            # Llama 4 sometimes returns final JSON as a failed tool call
+            # Extract the JSON from failed_generation
+            error_body = e.body if hasattr(e, 'body') else {}
+            if isinstance(error_body, dict) and error_body.get("error", {}).get("code") == "tool_use_failed":
+                failed = error_body["error"].get("failed_generation", "")
+                if failed:
+                    return failed
+            raise
+
         message = response.choices[0].message
 
         # No tool calls — final response

@@ -142,6 +142,12 @@ async def run_outreach(
 
     gap_result, warm_result = await asyncio.gather(gap_task, warm_task)
 
+    # Normalize — agents sometimes return unexpected shapes
+    if not isinstance(gap_result, dict):
+        gap_result = {"gaps": [], "strengths": [], "strategy": "", "match_percentage": 0}
+    if not isinstance(warm_result, dict):
+        warm_result = {"warm_paths": [], "warmest_path": None, "is_warm": False}
+
     match_pct = gap_result.get("match_percentage", 0)
     is_warm = warm_result.get("is_warm", False)
 
@@ -211,7 +217,20 @@ async def run_outreach(
 
     score_result, followup_result = await asyncio.gather(score_task, followup_task)
 
-    # --- Complete ---
+    if not isinstance(score_result, dict):
+        score_result = {"scores": []}
+    if not isinstance(followup_result, dict):
+        followup_result = {"sequence": []}
+    if not isinstance(personalization_result, dict):
+        personalization_result = {"angles": [], "research_quality": research_quality}
+    if not isinstance(research_result, dict):
+        research_result = {"findings": [], "company_summary": ""}
+
+    # --- Complete — build result defensively ---
+    def safe_get(data: dict, key: str, fallback: list) -> list:
+        val = data.get(key, fallback)
+        return val if isinstance(val, list) else fallback
+
     result = OutreachResult(
         contact={
             "name": top_contact.get("name", ""),
@@ -221,12 +240,18 @@ async def run_outreach(
             "relevance_score": top_contact.get("relevance_score", 0),
             "relevance_reason": top_contact.get("relevance_reason", ""),
         },
-        research=research_result,
-        personalization=personalization_result,
-        emails=emails,
-        gap_analysis=gap_result,
-        warm_paths=warm_result,
-        email_scores=score_result,
+        research={
+            "findings": safe_get(research_result, "findings", []),
+            "company_summary": research_result.get("company_summary", ""),
+        },
+        personalization={
+            "angles": safe_get(personalization_result, "angles", []),
+            "research_quality": personalization_result.get("research_quality", research_quality),
+        },
+        emails=emails if isinstance(emails, list) else [],
+        gap_analysis=gap_result if gap_result.get("match_percentage") is not None else None,
+        warm_paths=warm_result if warm_result.get("warm_paths") is not None else None,
+        email_scores=score_result if safe_get(score_result, "scores", []) else None,
         follow_up=followup_result,
     )
 

@@ -41,7 +41,12 @@ async def run_agent(
     # Add output schema instruction to system prompt
     if output_schema:
         schema_json = json.dumps(output_schema.model_json_schema(), indent=2)
-        system_prompt += f"\n\nYou MUST return your final response as valid JSON matching this schema:\n```json\n{schema_json}\n```\nReturn ONLY the JSON object, no other text."
+        system_prompt += (
+            "\n\nIMPORTANT: When you have gathered enough information and are ready to give your final answer, "
+            "DO NOT call any more tools. Instead, respond with a plain text message containing ONLY valid JSON "
+            f"matching this schema:\n```json\n{schema_json}\n```\n"
+            "Return ONLY the JSON object as your message content, no other text. Do NOT use a tool call for your final response."
+        )
 
     # Build user message with context
     context_str = json.dumps(context, indent=2, default=str)
@@ -62,7 +67,7 @@ async def run_agent(
         messages=messages,
         tools=tools,
         tool_handlers=tool_handlers,
-        model=model,
+        model=DEFAULT_MODEL,
     )
 
     # Parse response as JSON
