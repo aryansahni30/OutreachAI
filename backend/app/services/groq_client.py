@@ -38,7 +38,7 @@ async def chat_with_tools(
     messages: list[dict[str, Any]],
     tools: list[dict[str, Any]] | None = None,
     tool_handlers: dict[str, Any] | None = None,
-    model: str = "llama-3.3-70b-versatile",
+    model: str = "meta-llama/llama-4-scout-17b-16e-instruct",
     max_iterations: int = 5,
     temperature: float = 0.7,
 ) -> str:
