@@ -124,8 +124,8 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
           {showLinkedin && (
             <div className="mt-3">
               <p className="text-xs text-[var(--color-text-muted)] mb-2">
-                Export from LinkedIn: Settings → Data Privacy → Get a copy of your data → Connections.
-                Paste the CSV content or just names + companies.
+                LinkedIn → Settings → Data Privacy → Get a copy of your data → Connections.
+                Paste the CSV or just list names and companies. Only 1st-degree connections are exported — that's what we need to find warm intros.
               </p>
               <textarea
                 value={linkedinConnections}
