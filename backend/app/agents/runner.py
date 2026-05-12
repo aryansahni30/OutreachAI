@@ -15,6 +15,12 @@ def load_prompt(agent_name: str) -> str:
     return prompt_file.read_text()
 
 
+# Non-critical agents use smaller model to save tokens
+LITE_AGENTS = {"gap_analyzer", "warm_path", "scorer", "followup"}
+LITE_MODEL = "llama-3.1-8b-instant"
+DEFAULT_MODEL = "llama-3.3-70b-versatile"
+
+
 async def run_agent(
     agent_name: str,
     context: dict[str, Any],
@@ -52,12 +58,16 @@ async def run_agent(
             message=f"{agent_name.title()} Agent starting...",
         )
 
+    # Pick model — lite for non-critical agents
+    model = LITE_MODEL if agent_name in LITE_AGENTS else DEFAULT_MODEL
+
     # Run the ReAct loop
     response_text = await chat_with_tools(
         system_prompt=system_prompt,
         messages=messages,
         tools=tools,
         tool_handlers=tool_handlers,
+        model=model,
     )
 
     # Parse response as JSON

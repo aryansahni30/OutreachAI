@@ -21,7 +21,11 @@ async def _call_groq_with_retry(client: AsyncGroq, kwargs: dict, max_retries: in
     for attempt in range(max_retries):
         try:
             return await client.chat.completions.create(**kwargs)
-        except RateLimitError:
+        except RateLimitError as e:
+            error_msg = str(e).lower()
+            # Daily limit — no point retrying, raise immediately
+            if "tokens per day" in error_msg or "tpd" in error_msg:
+                raise
             if attempt < max_retries - 1:
                 wait = (attempt + 1) * 5  # 5s, 10s, 15s
                 await asyncio.sleep(wait)
