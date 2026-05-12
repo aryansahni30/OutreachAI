@@ -1,4 +1,4 @@
-import { Flame, Link2, Sparkles } from 'lucide-react';
+import { Flame, Link2, Sparkles, Users } from 'lucide-react';
 import type { WarmPathResult } from '../types';
 
 interface WarmPathCardProps {
@@ -15,6 +15,7 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   direct: Link2,
   indirect: Sparkles,
   cultural: Flame,
+  mutual_contact: Users,
 };
 
 export function WarmPathCard({ result }: WarmPathCardProps) {
@@ -45,6 +46,29 @@ export function WarmPathCard({ result }: WarmPathCardProps) {
             <Sparkles size={13} className="shrink-0 mt-0.5" />
             Lead with: {result.warmest_path}
           </p>
+        </div>
+      )}
+
+      {/* Mutual LinkedIn Contacts */}
+      {result.mutual_contacts?.length > 0 && (
+        <div className="px-5 py-4 border-b border-[var(--color-border-subtle)]">
+          <h4 className="text-xs font-semibold text-[var(--color-primary-light)] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+            <Users size={12} />
+            Mutual LinkedIn Contacts at Target Company
+          </h4>
+          <div className="space-y-2">
+            {result.mutual_contacts.map((contact, i) => (
+              <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/10">
+                <div className="w-8 h-8 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center text-xs font-bold text-[var(--color-primary-light)]">
+                  {contact.name.charAt(0)}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">{contact.name}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">{contact.title} · {contact.company}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

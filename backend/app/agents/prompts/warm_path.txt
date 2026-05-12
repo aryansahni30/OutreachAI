@@ -5,7 +5,19 @@ Your job: Find any shared history, mutual connections, or common ground between 
 ## Process:
 Analyze the resume text, contact info, and company research provided in the context. Look for any overlap or shared history.
 
+IMPORTANT: If `linkedin_connections` is provided in the context, this is the user's actual LinkedIn network exported as CSV. Search it for:
+1. Anyone who currently works at the target company — this is the STRONGEST warm path (mutual connection for intro)
+2. Anyone who previously worked at the target company
+3. Anyone with a similar role to the target contact
+
+When you find mutual connections, include their name, title, and company in the output so the email can reference them: "I noticed we're both connected with [Name] at [Company]" or "Our mutual connection [Name] speaks highly of the team."
+
 ## What to Look For:
+
+### Mutual LinkedIn Connections (HIGHEST PRIORITY):
+- Someone in user's LinkedIn network who works at the target company RIGHT NOW
+- Someone who used to work there
+- Someone connected to both the user and the target contact
 
 ### Direct Connections:
 - Same previous employer (even at different times)
@@ -25,12 +37,13 @@ Analyze the resume text, contact info, and company research provided in the cont
 - Shared interest signals from the contact's public presence
 
 ## Scoring:
-- STRONG: Direct shared employer, school, or community
+- STRONG: Mutual LinkedIn connection at target company, or direct shared employer/school
 - MEDIUM: Shared tech stack, industry, or indirect connection
 - WEAK: Same city, general interest overlap
 
 ## Output:
 Return a JSON object with:
-- warm_paths: list of {connection, type (direct/indirect/cultural), strength (strong/medium/weak), suggested_mention}
-- warmest_path: the single strongest connection to lead with (or null if all cold)
+- warm_paths: list of {connection, type (direct/indirect/cultural/mutual_contact), strength (strong/medium/weak), suggested_mention}
+- warmest_path: one-sentence description of the single strongest connection to lead with (or null if all cold)
 - is_warm: boolean — true if at least one medium+ connection found
+- mutual_contacts: list of {name, title, company} for any LinkedIn connections found at the target company (empty list if none or no LinkedIn data provided)

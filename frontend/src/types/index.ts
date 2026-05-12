@@ -66,10 +66,17 @@ export interface WarmPath {
   suggested_mention: string;
 }
 
+export interface MutualContact {
+  name: string;
+  title: string;
+  company: string;
+}
+
 export interface WarmPathResult {
   warm_paths: WarmPath[];
   warmest_path: string | null;
   is_warm: boolean;
+  mutual_contacts: MutualContact[];
 }
 
 export interface ScoreBreakdown {
@@ -133,4 +140,5 @@ export interface OutreachRequest {
   goal: string;
   sender_name: string;
   sender_email: string;
+  linkedin_connections: string;
 }

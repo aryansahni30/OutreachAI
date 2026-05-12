@@ -5,6 +5,7 @@ async def run_warm_path_finder(
     resume_text: str,
     contact: dict,
     research: dict,
+    linkedin_connections: str = "",
     job_id: str | None = None,
 ) -> dict:
     context = {
@@ -13,7 +14,9 @@ async def run_warm_path_finder(
         "company_research": research,
     }
 
-    # Pure LLM agent — no tools needed
+    if linkedin_connections:
+        context["linkedin_connections"] = linkedin_connections[:5000]
+
     return await run_agent(
         agent_name="warm_path",
         context=context,

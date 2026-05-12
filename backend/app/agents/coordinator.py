@@ -56,6 +56,7 @@ async def run_outreach(
     sender_name: str,
     sender_email: str,
     job_id: str,
+    linkedin_connections: str = "",
 ) -> OutreachResult:
     """
     Full coordinator flow — 8 agents with graceful failure handling.
@@ -134,7 +135,8 @@ async def run_outreach(
     warm_task = _safe_run(
         run_warm_path_finder(
             resume_text=resume_text, contact=top_contact,
-            research=research_result, job_id=job_id,
+            research=research_result, linkedin_connections=linkedin_connections,
+            job_id=job_id,
         ),
         fallback={"warm_paths": [], "warmest_path": None, "is_warm": False},
         job_id=job_id, agent_name="warm_path",

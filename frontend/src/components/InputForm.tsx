@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Building2, FileText, Mail, Target, User } from 'lucide-react';
+import { ArrowRight, Building2, FileText, Link2, Mail, Target, User } from 'lucide-react';
 import type { OutreachRequest } from '../types';
 
 interface InputFormProps {
@@ -13,6 +13,8 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
   const [goal, setGoal] = useState('');
   const [senderName, setSenderName] = useState('');
   const [senderEmail, setSenderEmail] = useState('');
+  const [linkedinConnections, setLinkedinConnections] = useState('');
+  const [showLinkedin, setShowLinkedin] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,6 +24,7 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
       goal,
       sender_name: senderName,
       sender_email: senderEmail,
+      linkedin_connections: linkedinConnections,
     });
   };
 
@@ -104,6 +107,35 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
             rows={5}
             className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]/40 transition-all resize-none leading-relaxed"
           />
+        </div>
+
+        {/* LinkedIn Connections — collapsible */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowLinkedin(!showLinkedin)}
+            className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-light)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
+          >
+            <Link2 size={14} />
+            {showLinkedin ? 'Hide' : 'Add'} LinkedIn connections
+            <span className="text-[var(--color-text-muted)] font-normal text-xs">(find mutual contacts)</span>
+          </button>
+
+          {showLinkedin && (
+            <div className="mt-3">
+              <p className="text-xs text-[var(--color-text-muted)] mb-2">
+                Export from LinkedIn: Settings → Data Privacy → Get a copy of your data → Connections.
+                Paste the CSV content or just names + companies.
+              </p>
+              <textarea
+                value={linkedinConnections}
+                onChange={(e) => setLinkedinConnections(e.target.value)}
+                placeholder={"First Name,Last Name,Company,Position\nJohn,Doe,Salesforce,Engineering Manager\nJane,Smith,Stripe,Head of AI\n..."}
+                rows={4}
+                className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]/40 transition-all resize-none font-mono text-xs leading-relaxed"
+              />
+            </div>
+          )}
         </div>
 
         {/* Submit */}

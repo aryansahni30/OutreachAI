@@ -34,6 +34,7 @@ async def _run_job(job_id: str, request: OutreachRequest):
             sender_name=request.sender_name,
             sender_email=request.sender_email,
             job_id=job_id,
+            linkedin_connections=request.linkedin_connections,
         )
         _job_results[job_id] = result.model_dump()
     except Exception as e:

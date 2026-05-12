@@ -10,6 +10,7 @@ class OutreachRequest(BaseModel):
     resume_text: str
     goal: str = ""
     sender_name: str
+    linkedin_connections: str = ""
     sender_email: str
 
 
@@ -88,15 +89,22 @@ class GapAnalysis(BaseModel):
 
 class WarmPath(BaseModel):
     connection: str
-    type: str = "indirect"  # direct | indirect | cultural
+    type: str = "indirect"  # direct | indirect | cultural | mutual_contact
     strength: str = "weak"  # strong | medium | weak
     suggested_mention: str = ""
+
+
+class MutualContact(BaseModel):
+    name: str = ""
+    title: str = ""
+    company: str = ""
 
 
 class WarmPathResult(BaseModel):
     warm_paths: list[WarmPath] = []
     warmest_path: Any = None
     is_warm: bool = False
+    mutual_contacts: list[MutualContact] = []
 
 
 # --- New Feature: Email Score ---
