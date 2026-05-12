@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel
 
 
@@ -93,7 +95,7 @@ class WarmPath(BaseModel):
 
 class WarmPathResult(BaseModel):
     warm_paths: list[WarmPath] = []
-    warmest_path: str | None = None
+    warmest_path: Any = None
     is_warm: bool = False
 
 
