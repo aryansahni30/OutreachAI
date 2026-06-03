@@ -14,7 +14,10 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
   const [senderName, setSenderName] = useState('');
   const [senderEmail, setSenderEmail] = useState('');
   const [linkedinConnections, setLinkedinConnections] = useState('');
+  const [linkedinFileName, setLinkedinFileName] = useState('');
   const [showLinkedin, setShowLinkedin] = useState(false);
+  const [jobDescription, setJobDescription] = useState('');
+  const [showJobDesc, setShowJobDesc] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +28,7 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
       sender_name: senderName,
       sender_email: senderEmail,
       linkedin_connections: linkedinConnections,
+      job_description: jobDescription,
     });
   };
 
@@ -109,6 +113,34 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
           />
         </div>
 
+        {/* Job Description — collapsible */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowJobDesc(!showJobDesc)}
+            className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-light)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
+          >
+            <Target size={14} />
+            {showJobDesc ? 'Hide' : 'Add'} job description
+            <span className="text-[var(--color-text-muted)] font-normal text-xs">(sharper gap analysis)</span>
+          </button>
+
+          {showJobDesc && (
+            <div className="mt-3">
+              <p className="text-xs text-[var(--color-text-muted)] mb-2">
+                Paste the job description or role requirements. Without this, gap analysis guesses what the company wants from research alone.
+              </p>
+              <textarea
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                placeholder="Paste job description here..."
+                rows={5}
+                className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]/40 transition-all resize-none leading-relaxed text-sm"
+              />
+            </div>
+          )}
+        </div>
+
         {/* LinkedIn Connections — collapsible */}
         <div>
           <button
@@ -124,16 +156,36 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
           {showLinkedin && (
             <div className="mt-3">
               <p className="text-xs text-[var(--color-text-muted)] mb-2">
-                LinkedIn → Settings → Data Privacy → Get a copy of your data → Connections.
-                Paste the CSV or just list names and companies. Only 1st-degree connections are exported — that's what we need to find warm intros.
+                LinkedIn → Me → Settings &amp; Privacy → Data Privacy → Get a copy of your data → select Connections → Request archive. Upload the <span className="font-mono">Connections.csv</span> file here.
               </p>
-              <textarea
-                value={linkedinConnections}
-                onChange={(e) => setLinkedinConnections(e.target.value)}
-                placeholder={"First Name,Last Name,Company,Position\nJohn,Doe,Salesforce,Engineering Manager\nJane,Smith,Stripe,Head of AI\n..."}
-                rows={4}
-                className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]/40 transition-all resize-none font-mono text-xs leading-relaxed"
-              />
+              <label className="flex items-center gap-3 w-full px-4 py-3 bg-[var(--color-surface)] border border-dashed border-[var(--color-border-subtle)] rounded-xl cursor-pointer hover:border-[var(--color-primary)]/40 transition-all">
+                <Link2 size={16} className="text-[var(--color-text-muted)] shrink-0" />
+                <span className="text-sm text-[var(--color-text-muted)] truncate">
+                  {linkedinFileName || 'Choose Connections.csv…'}
+                </span>
+                {linkedinFileName && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); setLinkedinConnections(''); setLinkedinFileName(''); }}
+                    className="ml-auto text-[var(--color-text-muted)] hover:text-red-400 transition-colors shrink-0"
+                  >
+                    ✕
+                  </button>
+                )}
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setLinkedinFileName(file.name);
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setLinkedinConnections((ev.target?.result as string) || '');
+                    reader.readAsText(file);
+                  }}
+                />
+              </label>
             </div>
           )}
         </div>

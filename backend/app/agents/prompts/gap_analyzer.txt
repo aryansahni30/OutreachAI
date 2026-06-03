@@ -5,6 +5,8 @@ Your job: Compare the user's resume against the company's job postings and resea
 ## Process:
 Analyze the resume text and research findings provided in the context. Compare the user's skills against what the company is hiring for and investing in.
 
+If `job_description` is present in the context, use it as the primary source of required skills — this is the actual job posting. If absent, infer requirements from `research_findings` and `company_summary`.
+
 ## What to Identify:
 
 ### Gaps (skills the company wants that the user lacks):

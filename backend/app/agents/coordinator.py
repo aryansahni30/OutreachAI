@@ -17,6 +17,51 @@ from app.services.sse_manager import sse_manager
 SEED_FILE = Path(__file__).parent.parent.parent.parent / "seed" / "demo_contacts.json"
 
 
+def _extract_linkedin_contacts(company: str, linkedin_csv: str) -> list[dict]:
+    """Parse LinkedIn connections CSV for people at target company."""
+    if not linkedin_csv.strip():
+        return []
+
+    company_lower = company.lower().strip()
+    contacts = []
+
+    for line in linkedin_csv.strip().splitlines():
+        # Skip blank lines and header rows
+        stripped = line.strip().strip('"')
+        if not stripped or stripped.lower().startswith("first name"):
+            continue
+
+        # Handle both quoted CSV and plain comma-separated
+        parts = [p.strip().strip('"') for p in line.split(",")]
+        if len(parts) < 3:
+            continue
+
+        # Standard LinkedIn export: First Name, Last Name, URL, Email, Company, Position, Connected On
+        # Simpler paste: First Name, Last Name, Company, Position
+        if len(parts) >= 6:
+            first, last, _, _, contact_company, position = parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]
+        elif len(parts) >= 4:
+            first, last, contact_company, position = parts[0], parts[1], parts[2], parts[3]
+        else:
+            first, last, contact_company, position = parts[0], parts[1], parts[2], ""
+
+        name = f"{first} {last}".strip()
+        if not name or not contact_company:
+            continue
+
+        if company_lower in contact_company.lower() or contact_company.lower() in company_lower:
+            contacts.append({
+                "name": name,
+                "title": position,
+                "email": "",
+                "linkedin_url": "",
+                "relevance_score": 0.8,
+                "relevance_reason": f"LinkedIn connection at {contact_company}",
+            })
+
+    return contacts[:5]
+
+
 def _load_demo_contacts(company: str) -> dict:
     """Load seeded demo contacts as fallback."""
     if not SEED_FILE.exists():
@@ -57,6 +102,7 @@ async def run_outreach(
     sender_email: str,
     job_id: str,
     linkedin_connections: str = "",
+    job_description: str = "",
 ) -> OutreachResult:
     """
     Full coordinator flow — 8 agents with graceful failure handling.
@@ -78,13 +124,29 @@ async def run_outreach(
     using_demo = False
 
     if not contacts:
-        await sse_manager.emit(
-            job_id=job_id, agent="coordinator", status="running",
-            message="No contacts from Apollo. Using demo contacts.",
-        )
-        demo = _load_demo_contacts(company)
-        contacts = demo.get("contacts", [])
-        using_demo = True
+        # Try LinkedIn CSV before falling back to demo
+        if linkedin_connections:
+            linkedin_contacts = _extract_linkedin_contacts(company, linkedin_connections)
+            if linkedin_contacts:
+                await sse_manager.emit(
+                    job_id=job_id, agent="coordinator", status="running",
+                    message=f"Found {len(linkedin_contacts)} contact(s) from your LinkedIn network.",
+                )
+                contacts = linkedin_contacts
+            else:
+                await sse_manager.emit(
+                    job_id=job_id, agent="coordinator", status="running",
+                    message=f"No {company} contacts in LinkedIn CSV. Checking demo contacts.",
+                )
+
+        if not contacts:
+            await sse_manager.emit(
+                job_id=job_id, agent="coordinator", status="running",
+                message="No contacts from Apollo. Using demo contacts.",
+            )
+            demo = _load_demo_contacts(company)
+            contacts = demo.get("contacts", [])
+            using_demo = True
 
     if not contacts:
         await sse_manager.emit(
@@ -128,7 +190,7 @@ async def run_outreach(
     )
 
     gap_task = _safe_run(
-        run_gap_analyzer(resume_text=resume_text, research=research_result, job_id=job_id),
+        run_gap_analyzer(resume_text=resume_text, research=research_result, job_description=job_description, job_id=job_id),
         fallback={"gaps": [], "strengths": [], "strategy": "", "match_percentage": 0},
         job_id=job_id, agent_name="gap_analyzer",
     )
@@ -169,10 +231,23 @@ async def run_outreach(
         research=research_result,
         contact=top_contact,
         research_quality=research_quality,
+        job_description=job_description,
         job_id=job_id,
     )
 
     angles = personalization_result.get("angles", [])
+
+    # Fallback: if LLM returned no angles, synthesize a minimal brief so copywriter can still run
+    if not angles:
+        goal_text = goal or f"connect with someone at {company}"
+        fallback_angle = {
+            "angle": f"Reaching out about opportunities at {company} aligned with your background",
+            "reasoning": f"User's goal: {goal_text}. Resume highlights available for reference.",
+            "priority": 1,
+        }
+        personalization_result = {"angles": [fallback_angle], "research_quality": research_quality}
+        angles = [fallback_angle]
+
     await sse_manager.emit(
         job_id=job_id, agent="coordinator", status="running",
         message=f"Found {len(angles)} angles. Drafting emails...",

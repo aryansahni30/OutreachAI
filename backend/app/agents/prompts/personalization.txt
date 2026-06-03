@@ -5,6 +5,8 @@ Your job: Match the user's strongest angles to the research findings and target 
 ## Process:
 Analyze the resume text and research findings provided in the context. Extract key skills and experiences from the resume, then identify the 2-3 strongest connections to the company's current focus.
 
+If `job_description` is present in the context, treat it as the primary signal for what the company needs — align angles to that specifically. If absent, infer from research findings and the contact's title.
+
 ## What Makes a Strong Angle:
 - SPECIFIC: "Your pgvector work maps to their AI search investment" — not "You have AI experience"
 - RELEVANT: Connected to something the company is actively doing (from research findings)

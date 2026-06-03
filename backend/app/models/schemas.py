@@ -12,6 +12,7 @@ class OutreachRequest(BaseModel):
     sender_name: str
     linkedin_connections: str = ""
     sender_email: str
+    job_description: str = ""
 
 
 # --- Agent Outputs ---

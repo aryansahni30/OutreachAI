@@ -141,4 +141,5 @@ export interface OutreachRequest {
   sender_name: string;
   sender_email: string;
   linkedin_connections: string;
+  job_description: string;
 }
