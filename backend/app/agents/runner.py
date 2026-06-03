@@ -26,6 +26,7 @@ async def run_agent(
     tool_handlers: dict[str, Any] | None = None,
     output_schema: type[BaseModel] | None = None,
     job_id: str | None = None,
+    max_iterations: int = 5,
 ) -> dict[str, Any]:
     """
     Execute a specialist agent through the Groq ReAct loop.
@@ -68,6 +69,7 @@ async def run_agent(
         tools=tools,
         tool_handlers=tool_handlers,
         model=DEFAULT_MODEL,
+        max_iterations=max_iterations,
     )
 
     # Parse response as JSON

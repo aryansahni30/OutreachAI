@@ -85,8 +85,17 @@ async def _rank_contacts(contacts: list[dict], user_background: str, goal: str =
     }
 
 
+async def _search_apollo_safe(company: str, titles: list[str] | None = None) -> dict:
+    """Wrapper that short-circuits on free-plan errors so the LLM doesn't retry."""
+    result = await search_apollo(company, titles)
+    if result.get("error"):
+        # Return explicit empty result — LLM should finalize immediately
+        return {"contacts": [], "note": "Apollo unavailable. Return {\"contacts\": []} now."}
+    return result
+
+
 TOOL_HANDLERS: dict[str, Any] = {
-    "search_apollo": search_apollo,
+    "search_apollo": _search_apollo_safe,
     "verify_email": verify_email,
     "rank_contacts": _rank_contacts,
 }
@@ -111,4 +120,5 @@ async def run_prospect_agent(
         tool_handlers=TOOL_HANDLERS,
         output_schema=ProspectResult,
         job_id=job_id,
+        max_iterations=3,
     )

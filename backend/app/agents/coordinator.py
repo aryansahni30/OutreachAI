@@ -158,9 +158,17 @@ async def run_outreach(
         message=f"Finding the right contact at {company}...",
     )
 
-    prospect_result = await run_prospect_agent(
-        company=company, resume_text=resume_text, goal=goal, job_id=job_id,
-    )
+    try:
+        prospect_result = await asyncio.wait_for(
+            run_prospect_agent(company=company, resume_text=resume_text, goal=goal, job_id=job_id),
+            timeout=25,
+        )
+    except asyncio.TimeoutError:
+        prospect_result = {"contacts": []}
+        await sse_manager.emit(
+            job_id=job_id, agent="coordinator", status="running",
+            message="Apollo search timed out — continuing with LinkedIn contacts.",
+        )
 
     apollo_contacts = prospect_result.get("contacts", [])
 
