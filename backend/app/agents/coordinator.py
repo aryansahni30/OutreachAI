@@ -1,4 +1,6 @@
 import asyncio
+import csv
+import io
 import json
 import traceback
 from pathlib import Path
@@ -35,8 +37,13 @@ _SENIORITY: list[tuple[list[str], int]] = [
 ]
 
 
+_EXCLUDE_KEYWORDS = ["intern", "student", "ambassador", "fellow", "volunteer", "undergraduate", "incoming"]
+
 def _title_rank(title: str) -> int:
     t = title.lower()
+    # Exclusions checked first — "Software Engineering Intern" must not match "engineer"
+    if any(kw in t for kw in _EXCLUDE_KEYWORDS):
+        return -1
     for keywords, score in _SENIORITY:
         if any(kw in t for kw in keywords):
             return score
@@ -51,23 +58,24 @@ def _extract_linkedin_contacts(company: str, linkedin_csv: str) -> list[dict]:
     company_lower = company.lower().strip()
     contacts = []
 
-    for line in linkedin_csv.strip().splitlines():
-        stripped = line.strip().strip('"')
-        if not stripped or stripped.lower().startswith("first name"):
+    reader = csv.reader(io.StringIO(linkedin_csv.strip()))
+    for parts in reader:
+        if not parts:
             continue
-
-        parts = [p.strip().strip('"') for p in line.split(",")]
-        if len(parts) < 3:
+        # Skip header row
+        if parts[0].strip().lower() in ("first name", "firstname"):
             continue
 
         # Standard LinkedIn export: First Name, Last Name, URL, Email, Company, Position, Connected On
         if len(parts) >= 6:
-            first, last, url, _, contact_company, position = parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]
+            first, last, url = parts[0].strip(), parts[1].strip(), parts[2].strip()
+            contact_company, position = parts[4].strip(), parts[5].strip()
         elif len(parts) >= 4:
-            first, last, contact_company, position = parts[0], parts[1], parts[2], parts[3]
+            first, last = parts[0].strip(), parts[1].strip()
+            contact_company, position = parts[2].strip(), parts[3].strip()
             url = ""
         else:
-            first, last, contact_company, position, url = parts[0], parts[1], parts[2], "", ""
+            continue
 
         name = f"{first} {last}".strip()
         if not name or not contact_company:
