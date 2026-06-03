@@ -3,11 +3,19 @@ import type { Contact } from '../types';
 
 interface ContactCardProps {
   contact: Contact;
+  label?: string;
 }
 
-export function ContactCard({ contact }: ContactCardProps) {
+export function ContactCard({ contact, label }: ContactCardProps) {
   return (
     <div className="rounded-2xl bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] p-6 gradient-border">
+      {label && (
+        <div className="mb-3">
+          <span className="text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary-light)]">
+            {label}
+          </span>
+        </div>
+      )}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl bg-[var(--color-primary)]/10 flex items-center justify-center shrink-0">

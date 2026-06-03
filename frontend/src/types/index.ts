@@ -117,6 +117,7 @@ export interface FollowUpResult {
 
 export interface OutreachResult {
   contact: Contact;
+  linkedin_contact?: Contact | null;
   research: ResearchResult;
   personalization: PersonalizationResult;
   emails: EmailDraft[];

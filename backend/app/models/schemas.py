@@ -150,6 +150,7 @@ class FollowUpResult(BaseModel):
 
 class OutreachResult(BaseModel):
     contact: Contact
+    linkedin_contact: Contact | None = None
     research: ResearchResult
     personalization: PersonalizationResult
     emails: list[EmailDraft]

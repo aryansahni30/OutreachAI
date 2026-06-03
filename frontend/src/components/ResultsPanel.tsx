@@ -24,8 +24,18 @@ export function ResultsPanel({ result, sessionToken, isLoggedIn, onLoginRequired
         <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
           Target Contact
         </h2>
-        <ContactCard contact={result.contact} />
+        <ContactCard contact={result.contact} label="Cold Target" />
       </div>
+
+      {/* LinkedIn Connection */}
+      {result.linkedin_contact && (
+        <div>
+          <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
+            LinkedIn Connection
+          </h2>
+          <ContactCard contact={result.linkedin_contact} label="Warm Connection" />
+        </div>
+      )}
 
       {/* Warm Paths */}
       {result.warm_paths && result.warm_paths.warm_paths?.length > 0 && (

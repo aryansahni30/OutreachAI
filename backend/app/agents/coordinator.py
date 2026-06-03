@@ -16,9 +16,35 @@ from app.services.sse_manager import sse_manager
 
 SEED_FILE = Path(__file__).parent.parent.parent.parent / "seed" / "demo_contacts.json"
 
+# Seniority scoring — higher = more senior. Negative = exclude.
+_SENIORITY: list[tuple[list[str], int]] = [
+    (["ceo", "chief executive", "cto", "chief technology", "coo", "cfo", "cpo", "ciso", "chief "], 100),
+    (["president", "founder", "co-founder", "cofounder"], 90),
+    (["vp ", "vp,", "vice president", "v.p."], 80),
+    (["director"], 70),
+    (["head of", "head,"], 65),
+    (["principal"], 60),
+    (["staff "], 55),
+    (["senior manager", "sr. manager"], 52),
+    (["manager", " lead,", "lead "], 50),
+    (["senior ", "sr. ", "sr,"], 40),
+    (["engineer", "developer", "designer", "scientist", "analyst"], 30),
+    (["associate", "coordinator", "specialist", "consultant"], 20),
+    (["junior", "jr."], 10),
+    (["intern", "student", "ambassador", "fellow", "volunteer", "undergraduate"], -1),
+]
+
+
+def _title_rank(title: str) -> int:
+    t = title.lower()
+    for keywords, score in _SENIORITY:
+        if any(kw in t for kw in keywords):
+            return score
+    return 25
+
 
 def _extract_linkedin_contacts(company: str, linkedin_csv: str) -> list[dict]:
-    """Parse LinkedIn connections CSV for people at target company."""
+    """Parse LinkedIn connections CSV, ranked by seniority. Excludes interns/students."""
     if not linkedin_csv.strip():
         return []
 
@@ -26,39 +52,47 @@ def _extract_linkedin_contacts(company: str, linkedin_csv: str) -> list[dict]:
     contacts = []
 
     for line in linkedin_csv.strip().splitlines():
-        # Skip blank lines and header rows
         stripped = line.strip().strip('"')
         if not stripped or stripped.lower().startswith("first name"):
             continue
 
-        # Handle both quoted CSV and plain comma-separated
         parts = [p.strip().strip('"') for p in line.split(",")]
         if len(parts) < 3:
             continue
 
         # Standard LinkedIn export: First Name, Last Name, URL, Email, Company, Position, Connected On
-        # Simpler paste: First Name, Last Name, Company, Position
         if len(parts) >= 6:
-            first, last, _, _, contact_company, position = parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]
+            first, last, url, _, contact_company, position = parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]
         elif len(parts) >= 4:
             first, last, contact_company, position = parts[0], parts[1], parts[2], parts[3]
+            url = ""
         else:
-            first, last, contact_company, position = parts[0], parts[1], parts[2], ""
+            first, last, contact_company, position, url = parts[0], parts[1], parts[2], "", ""
 
         name = f"{first} {last}".strip()
         if not name or not contact_company:
             continue
 
-        if company_lower in contact_company.lower() or contact_company.lower() in company_lower:
-            contacts.append({
-                "name": name,
-                "title": position,
-                "email": "",
-                "linkedin_url": "",
-                "relevance_score": 0.8,
-                "relevance_reason": f"LinkedIn connection at {contact_company}",
-            })
+        if company_lower not in contact_company.lower() and contact_company.lower() not in company_lower:
+            continue
 
+        rank = _title_rank(position)
+        if rank < 0:
+            continue  # skip interns, students, ambassadors
+
+        contacts.append({
+            "name": name,
+            "title": position,
+            "email": "",
+            "linkedin_url": url,
+            "relevance_score": min(0.95, 0.4 + rank / 130),
+            "relevance_reason": f"LinkedIn connection at {contact_company}",
+            "_rank": rank,
+        })
+
+    contacts.sort(key=lambda c: c["_rank"], reverse=True)
+    for c in contacts:
+        c.pop("_rank", None)
     return contacts[:5]
 
 
@@ -120,47 +154,66 @@ async def run_outreach(
         company=company, resume_text=resume_text, goal=goal, job_id=job_id,
     )
 
-    contacts = prospect_result.get("contacts", [])
+    apollo_contacts = prospect_result.get("contacts", [])
+
+    # Always extract LinkedIn contacts independently (for warm connections)
+    linkedin_contacts = _extract_linkedin_contacts(company, linkedin_connections) if linkedin_connections else []
+
     using_demo = False
 
-    if not contacts:
-        # Try LinkedIn CSV before falling back to demo
-        if linkedin_connections:
-            linkedin_contacts = _extract_linkedin_contacts(company, linkedin_connections)
-            if linkedin_contacts:
-                await sse_manager.emit(
-                    job_id=job_id, agent="coordinator", status="running",
-                    message=f"Found {len(linkedin_contacts)} contact(s) from your LinkedIn network.",
-                )
-                contacts = linkedin_contacts
-            else:
-                await sse_manager.emit(
-                    job_id=job_id, agent="coordinator", status="running",
-                    message=f"No {company} contacts in LinkedIn CSV. Checking demo contacts.",
-                )
+    # Primary contact: best Apollo result (senior title) or best LinkedIn, fallback demo
+    if apollo_contacts:
+        top_contact = apollo_contacts[0]
+        await sse_manager.emit(
+            job_id=job_id, agent="coordinator", status="running",
+            message=f"Apollo found: {top_contact.get('name')} — {top_contact.get('title')}",
+        )
+    elif linkedin_contacts:
+        top_contact = linkedin_contacts[0]
+        await sse_manager.emit(
+            job_id=job_id, agent="coordinator", status="running",
+            message=f"Using top LinkedIn connection: {top_contact.get('name')} — {top_contact.get('title')}",
+        )
+    else:
+        await sse_manager.emit(
+            job_id=job_id, agent="coordinator", status="running",
+            message="No contacts found. Using demo contacts.",
+        )
+        demo = _load_demo_contacts(company)
+        apollo_contacts = demo.get("contacts", [])
+        top_contact = apollo_contacts[0] if apollo_contacts else {}
+        using_demo = True
 
-        if not contacts:
-            await sse_manager.emit(
-                job_id=job_id, agent="coordinator", status="running",
-                message="No contacts from Apollo. Using demo contacts.",
-            )
-            demo = _load_demo_contacts(company)
-            contacts = demo.get("contacts", [])
-            using_demo = True
-
-    if not contacts:
+    if not top_contact:
         await sse_manager.emit(
             job_id=job_id, agent="coordinator", status="error",
             message="No contacts found. Cannot proceed.",
         )
         raise ValueError("No contacts found for this company.")
 
-    top_contact = contacts[0]
+    # Best LinkedIn contact = highest ranked connection that isn't the primary contact
+    best_linkedin = next(
+        (c for c in linkedin_contacts if c.get("name") != top_contact.get("name")),
+        linkedin_contacts[0] if linkedin_contacts and linkedin_contacts[0].get("name") != top_contact.get("name") else None,
+    )
+    # If primary IS a linkedin contact and there's a second one, use it; otherwise set to None if same
+    if linkedin_contacts:
+        other_linkedin = [c for c in linkedin_contacts if c.get("name") != top_contact.get("name")]
+        best_linkedin = other_linkedin[0] if other_linkedin else (linkedin_contacts[0] if top_contact not in linkedin_contacts else None)
+    else:
+        best_linkedin = None
+
+    if linkedin_contacts:
+        msg = f"Found {len(linkedin_contacts)} LinkedIn connection(s) at {company}"
+        if best_linkedin:
+            msg += f": {best_linkedin.get('name')} ({best_linkedin.get('title')})"
+        await sse_manager.emit(job_id=job_id, agent="coordinator", status="running", message=msg)
+
     contact_summary = f"{top_contact.get('name', 'Unknown')} — {top_contact.get('title', 'Unknown')}"
 
     await sse_manager.emit(
         job_id=job_id, agent="coordinator", status="running",
-        message=f"Top contact: {contact_summary}" + (" (demo)" if using_demo else ""),
+        message=f"Target contact: {contact_summary}" + (" (demo)" if using_demo else ""),
     )
 
     # --- Step 2: Research (critical) ---
@@ -317,6 +370,14 @@ async def run_outreach(
             "relevance_score": top_contact.get("relevance_score", 0),
             "relevance_reason": top_contact.get("relevance_reason", ""),
         },
+        linkedin_contact={
+            "name": best_linkedin.get("name", ""),
+            "title": best_linkedin.get("title", ""),
+            "email": best_linkedin.get("email", ""),
+            "linkedin_url": best_linkedin.get("linkedin_url", ""),
+            "relevance_score": best_linkedin.get("relevance_score", 0),
+            "relevance_reason": best_linkedin.get("relevance_reason", ""),
+        } if best_linkedin else None,
         research={
             "findings": safe_get(research_result, "findings", []),
             "company_summary": research_result.get("company_summary", ""),
