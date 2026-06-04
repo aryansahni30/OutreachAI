@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, Copy, Paperclip, Send, X } from 'lucide-react';
 import type { EmailDraft, EmailScore } from '../types';
 
@@ -13,11 +13,37 @@ interface EmailCardProps {
   score?: EmailScore;
 }
 
-const TONE_STYLES: Record<string, { label: string; badge: string; border: string }> = {
-  casual: { label: 'Casual', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', border: 'hover:border-emerald-500/30' },
-  professional: { label: 'Professional', badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20', border: 'hover:border-blue-500/30' },
-  concise: { label: 'Concise', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20', border: 'hover:border-amber-500/30' },
-};
+interface ScoreBarProps {
+  label: string;
+  value: number;
+}
+
+function ScoreBar({ label, value }: ScoreBarProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  const barColor =
+    value >= 70 ? 'bg-emerald-500' : value >= 50 ? 'bg-amber-500' : 'bg-[var(--color-primary)]';
+
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="text-[11px] text-[var(--color-text-muted)] w-20 shrink-0 capitalize">{label}</span>
+      <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+        <div
+          className={`h-full rounded-full ${barColor} animate-progress-fill`}
+          style={{ width: mounted ? `${value}%` : '0%' }}
+        />
+      </div>
+      <span className="text-[11px] font-semibold text-[var(--color-text-secondary)] w-6 text-right shrink-0">
+        {value}
+      </span>
+    </div>
+  );
+}
 
 export function EmailCard({
   email,
@@ -32,10 +58,18 @@ export function EmailCard({
   const [sent, setSent] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [showScore, setShowScore] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const style = TONE_STYLES[email.tone] || TONE_STYLES.professional;
   const fullEmail = `Subject: ${email.subject}\n\n${email.body}`;
+
+  const scoreColor = score
+    ? score.overall_score >= 70
+      ? 'text-emerald-400'
+      : score.overall_score >= 50
+        ? 'text-amber-400'
+        : 'text-red-400'
+    : '';
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(fullEmail);
@@ -89,64 +123,40 @@ export function EmailCard({
   };
 
   return (
-    <div className={`rounded-2xl bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] p-5 sm:p-6 transition-all ${style.border}`}>
-      {/* Header with score */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2.5">
-          <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${style.badge}`}>
-            {style.label}
-          </span>
-          {score && (
-            <div className="flex items-center gap-1.5">
-              <span className={`text-lg font-bold ${
-                score.overall_score >= 70 ? 'text-emerald-400' :
-                score.overall_score >= 50 ? 'text-amber-400' : 'text-red-400'
-              }`}>{score.overall_score}</span>
-              <span className="text-[10px] text-[var(--color-text-muted)]">/100</span>
-            </div>
-          )}
-        </div>
-        <div className="text-right">
-          {score && (
-            <p className="text-xs font-medium text-[var(--color-primary-light)]">{score.predicted_response_rate} response</p>
-          )}
-          <span className="text-xs text-[var(--color-text-muted)]">{email.word_count} words</span>
-        </div>
-      </div>
-
-      {/* Score breakdown */}
-      {score && (
-        <div className="mb-4 p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border-subtle)]">
-          <div className="flex gap-2 mb-2">
-            {Object.entries(score.breakdown).map(([key, val]) => (
-              <div key={key} className="flex-1 text-center">
-                <div className="text-xs font-bold text-[var(--color-text-primary)]">{val}</div>
-                <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)]">{key.slice(0, 4)}</div>
-              </div>
-            ))}
+    <div className="rounded-2xl bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] overflow-hidden">
+      {/* Header — metadata */}
+      <div className="px-5 pt-5 pb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-[var(--color-text-muted)]">To:</span>
+            <span className="text-[var(--color-text-secondary)]">{recipientEmail || '—'}</span>
           </div>
-          <p className="text-xs text-[var(--color-text-muted)] italic">{score.verdict}</p>
+          <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
+            {score && (
+              <span className="text-[var(--color-primary-light)]">{score.predicted_response_rate} resp. est.</span>
+            )}
+            <span>{email.word_count}w</span>
+          </div>
         </div>
-      )}
-
-      {/* Email content */}
-      <div className="space-y-3">
-        <div>
-          <p className="text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1">To</p>
-          <p className="text-sm text-[var(--color-text-secondary)]">{recipientEmail}</p>
-        </div>
-        <div>
-          <p className="text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Subject</p>
-          <p className="text-sm font-semibold text-[var(--color-text-primary)]">{email.subject}</p>
-        </div>
-        <div className="pt-2 border-t border-[var(--color-border-subtle)]">
-          <p className="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">{email.body}</p>
-        </div>
+        <p className="text-base font-semibold text-[var(--color-text-primary)] leading-snug">
+          {email.subject}
+        </p>
       </div>
+
+      <div className="h-px bg-[var(--color-border-subtle)]" />
+
+      {/* Body */}
+      <div className="px-5 py-4">
+        <p className="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">
+          {email.body}
+        </p>
+      </div>
+
+      <div className="h-px bg-[var(--color-border-subtle)]" />
 
       {/* Attachments */}
       {!sent && (
-        <div className="mt-4">
+        <div className="px-5 pt-3">
           <input
             ref={fileInputRef}
             type="file"
@@ -155,11 +165,13 @@ export function EmailCard({
             className="hidden"
             accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
           />
-
           {attachments.length > 0 && (
-            <div className="space-y-1.5 mb-3">
+            <div className="space-y-1.5 mb-2">
               {attachments.map((file, i) => (
-                <div key={i} className="flex items-center justify-between text-xs bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2">
+                <div
+                  key={i}
+                  className="flex items-center justify-between text-xs bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2"
+                >
                   <div className="flex items-center gap-2 text-[var(--color-text-secondary)] truncate">
                     <Paperclip size={12} />
                     {file.name}
@@ -174,44 +186,89 @@ export function EmailCard({
               ))}
             </div>
           )}
+        </div>
+      )}
 
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors cursor-pointer"
-          >
-            <Paperclip size={12} />
-            Attach resume or cover letter
-          </button>
+      {/* Score breakdown — collapsible */}
+      {score && showScore && (
+        <div key="breakdown" className="px-5 pb-3 animate-fade-slide-up">
+          <div className="p-3.5 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border-subtle)] space-y-2.5">
+            {Object.entries(score.breakdown).map(([key, val]) => (
+              <ScoreBar key={key} label={key} value={val} />
+            ))}
+            {score.verdict && (
+              <p className="text-xs text-[var(--color-text-muted)] italic pt-1 border-t border-[var(--color-border-subtle)]">
+                {score.verdict}
+              </p>
+            )}
+          </div>
         </div>
       )}
 
       {sendError && (
-        <p className="mt-3 text-xs text-red-400">{sendError}</p>
+        <p className="px-5 pb-2 text-xs text-red-400">{sendError}</p>
       )}
 
-      {/* Actions */}
-      <div className="mt-5 flex gap-2.5">
+      {/* Footer — actions */}
+      <div className="px-4 py-3 flex items-center gap-1.5">
+        {!sent && (
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            title="Attach file"
+            className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors cursor-pointer rounded-lg hover:bg-white/5"
+          >
+            <Paperclip size={15} />
+          </button>
+        )}
+
+        {score && (
+          <button
+            onClick={() => setShowScore(!showScore)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+              showScore
+                ? `${scoreColor} bg-white/5 border-white/10`
+                : `${scoreColor} border-transparent hover:bg-white/5`
+            }`}
+          >
+            <span className="text-sm font-bold">{score.overall_score}</span>
+            <span className="opacity-50">/100</span>
+            <span
+              className="ml-0.5 opacity-60 transition-transform duration-200"
+              style={{ display: 'inline-block', transform: showScore ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            >
+              ▾
+            </span>
+          </button>
+        )}
+
+        <div className="flex-1" />
+
         <button
           onClick={handleCopy}
-          className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl transition-all cursor-pointer bg-[var(--color-surface)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-default)] hover:text-[var(--color-text-primary)] flex items-center justify-center gap-2"
+          className="py-2 px-3.5 text-sm font-medium rounded-xl transition-all cursor-pointer bg-[var(--color-surface)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-default)] hover:text-[var(--color-text-primary)] flex items-center gap-2"
         >
           {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
         </button>
 
         {sent ? (
-          <div className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center gap-2">
+          <div className="py-2 px-3.5 text-sm font-medium rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-2">
             <Check size={14} /> Sent
           </div>
         ) : (
           <button
             onClick={handleSend}
             disabled={sending}
-            className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl transition-all cursor-pointer animated-gradient text-white disabled:opacity-40 hover:shadow-[0_0_20px_-5px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2"
+            className="py-2 px-3.5 text-sm font-medium rounded-xl transition-all cursor-pointer animated-gradient text-white disabled:opacity-40 hover:shadow-[0_0_20px_-5px_rgba(37,99,235,0.4)] flex items-center gap-2"
           >
             {sending ? (
-              <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending</>
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Sending
+              </>
             ) : (
-              <><Send size={14} /> Send Email</>
+              <>
+                <Send size={14} /> Send
+              </>
             )}
           </button>
         )}

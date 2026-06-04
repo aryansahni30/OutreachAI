@@ -66,7 +66,7 @@ async def _run_job(job_id: str, request: OutreachRequest):
         await sse_manager.emit(
             job_id=job_id,
             agent="coordinator",
-            status="complete",
+            status="error",
             message=f"Error: {str(e)}",
         )
 

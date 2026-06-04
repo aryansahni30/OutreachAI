@@ -1,4 +1,4 @@
-import { Zap } from 'lucide-react';
+import { ArrowLeft, Zap } from 'lucide-react';
 import { AgentFeed } from './components/AgentFeed';
 import { InputForm } from './components/InputForm';
 import { ResultsPanel } from './components/ResultsPanel';
@@ -36,6 +36,15 @@ function App() {
               <Zap size={16} className="text-white" />
             </div>
             <span className="font-semibold text-lg tracking-tight">OutreachAI</span>
+            {result && (
+              <button
+                onClick={() => window.location.reload()}
+                className="ml-3 flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors cursor-pointer"
+              >
+                <ArrowLeft size={14} />
+                New Outreach
+              </button>
+            )}
           </div>
 
           {user ? (
@@ -148,12 +157,6 @@ function App() {
               onLoginRequired={login}
             />
 
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-10 w-full py-3.5 px-4 bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-card)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] font-medium rounded-xl transition-all cursor-pointer"
-            >
-              Start New Outreach
-            </button>
           </div>
         )}
 

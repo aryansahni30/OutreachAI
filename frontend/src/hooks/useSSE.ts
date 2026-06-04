@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { createSSEConnection } from '../services/api';
+import { createSSEConnection, fetchResult } from '../services/api';
 import type { OutreachResult, SSEEvent } from '../types';
 
 interface UseSSEReturn {
@@ -43,15 +43,26 @@ export function useSSE(): UseSSEReturn {
 
       source.onmessage = (event) => {
         try {
-          // Reset error count on successful message
           errorCountRef.current = 0;
 
-          const data: SSEEvent = JSON.parse(event.data);
+          const data = JSON.parse(event.data) as SSEEvent & { type?: string };
+
+          // Ignore keepalive pings
+          if (data.type === 'ping') return;
+
           setEvents((prev) => [...prev, data]);
 
-          if (data.status === 'complete' && data.result) {
+          if (data.status === 'complete') {
             doneRef.current = true;
-            setResult(data.result);
+            if (data.result) {
+              setResult(data.result);
+            } else {
+              // Backend finished but sent no result — try fetching directly
+              fetchResult(jobId).then((r) => {
+                if (r) setResult(r as OutreachResult);
+                else setError('Processing completed but result was unavailable. Please try again.');
+              });
+            }
             setIsStreaming(false);
             source.close();
           }
@@ -67,16 +78,23 @@ export function useSSE(): UseSSEReturn {
       };
 
       source.onerror = () => {
-        // Don't error if we already completed
         if (doneRef.current) return;
 
         errorCountRef.current += 1;
 
-        // EventSource auto-reconnects. Only give up after 5 consecutive errors.
+        // After 5 consecutive errors, try fetching result before giving up
         if (errorCountRef.current >= 5) {
-          setError('Connection lost. Please try again.');
-          setIsStreaming(false);
           source.close();
+          fetchResult(jobId).then((r) => {
+            if (r) {
+              doneRef.current = true;
+              setResult(r as OutreachResult);
+              setIsStreaming(false);
+            } else {
+              setError('Connection lost. Please try again.');
+              setIsStreaming(false);
+            }
+          });
         }
         // Otherwise let EventSource auto-reconnect
       };

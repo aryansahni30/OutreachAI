@@ -22,3 +22,13 @@ export async function startOutreach(
 export function createSSEConnection(jobId: string): EventSource {
   return new EventSource(`${API_BASE}/outreach/stream/${jobId}`);
 }
+
+export async function fetchResult(jobId: string): Promise<unknown | null> {
+  try {
+    const res = await fetch(`${API_BASE}/outreach/result/${jobId}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
