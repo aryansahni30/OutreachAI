@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 # --- Request ---
@@ -85,6 +85,16 @@ class GapAnalysis(BaseModel):
     strengths: list[SkillStrength] = []
     strategy: str = ""
     match_percentage: int = 0
+
+    @field_validator("match_percentage", mode="before")
+    @classmethod
+    def coerce_match_percentage(cls, v: object) -> int:
+        if isinstance(v, int):
+            return v
+        try:
+            return int(v)
+        except (ValueError, TypeError):
+            return 0
 
 
 # --- New Feature: Warm Path ---
