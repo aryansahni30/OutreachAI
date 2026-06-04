@@ -8,6 +8,7 @@ async def run_copywriter_agent(
     sender_name: str,
     sender_email: str,
     job_id: str | None = None,
+    job_description: str = "",
 ) -> dict:
     context = {
         "personalization_brief": personalization,
@@ -15,6 +16,8 @@ async def run_copywriter_agent(
         "sender_name": sender_name,
         "sender_email": sender_email,
     }
+    if job_description:
+        context["job_description"] = job_description[:2000]  # keep tokens bounded
 
     # Copywriter has no external tools — pure LLM generation
     return await run_agent(

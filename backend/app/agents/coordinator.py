@@ -329,6 +329,7 @@ async def run_outreach(
         sender_name=sender_name,
         sender_email=sender_email,
         job_id=job_id,
+        job_description=job_description,
     )
 
     emails = copywriter_result.get("emails", [])

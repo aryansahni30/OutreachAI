@@ -7,6 +7,7 @@ from sse_starlette.sse import EventSourceResponse
 from app.agents.coordinator import run_outreach
 from app.models.schemas import JobCreatedResponse, OutreachRequest
 from app.services.sse_manager import sse_manager
+from app.tools.job_scraper import scrape_job_posting
 
 router = APIRouter(prefix="/api/outreach", tags=["outreach"])
 
@@ -27,6 +28,27 @@ async def generate_outreach(request: OutreachRequest):
 
 async def _run_job(job_id: str, request: OutreachRequest):
     try:
+        job_description = request.job_description
+
+        # Scrape job posting URL if provided and no manual description given
+        if request.job_url and not job_description.strip():
+            await sse_manager.emit(
+                job_id=job_id, agent="coordinator", status="running",
+                message=f"Fetching job posting from URL...",
+            )
+            scraped = await scrape_job_posting(request.job_url)
+            if scraped["text"]:
+                job_description = scraped["text"]
+                await sse_manager.emit(
+                    job_id=job_id, agent="coordinator", status="running",
+                    message=f"Job posting loaded ({len(job_description)} chars). Analyzing...",
+                )
+            else:
+                await sse_manager.emit(
+                    job_id=job_id, agent="coordinator", status="running",
+                    message=f"Could not fetch job URL ({scraped['error']}). Continuing without it.",
+                )
+
         result = await run_outreach(
             company=request.company,
             resume_text=request.resume_text,
@@ -35,7 +57,7 @@ async def _run_job(job_id: str, request: OutreachRequest):
             sender_email=request.sender_email,
             job_id=job_id,
             linkedin_connections=request.linkedin_connections,
-            job_description=request.job_description,
+            job_description=job_description,
         )
         _job_results[job_id] = result.model_dump()
     except Exception as e:

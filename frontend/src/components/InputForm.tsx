@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Building2, FileText, Link2, Mail, Target, User } from 'lucide-react';
+import { ArrowRight, Building2, FileText, Link2, Link, Mail, Target, User } from 'lucide-react';
 import type { OutreachRequest } from '../types';
 
 interface InputFormProps {
@@ -16,8 +16,10 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
   const [linkedinConnections, setLinkedinConnections] = useState('');
   const [linkedinFileName, setLinkedinFileName] = useState('');
   const [showLinkedin, setShowLinkedin] = useState(false);
+  const [jobUrl, setJobUrl] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [showJobDesc, setShowJobDesc] = useState(false);
+  const [showJobPaste, setShowJobPaste] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +30,7 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
       sender_name: senderName,
       sender_email: senderEmail,
       linkedin_connections: linkedinConnections,
+      job_url: jobUrl,
       job_description: jobDescription,
     });
   };
@@ -113,30 +116,53 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
           />
         </div>
 
-        {/* Job Description — collapsible */}
+        {/* Job Posting — URL primary, paste fallback */}
         <div>
           <button
             type="button"
             onClick={() => setShowJobDesc(!showJobDesc)}
             className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-light)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
           >
-            <Target size={14} />
-            {showJobDesc ? 'Hide' : 'Add'} job description
-            <span className="text-[var(--color-text-muted)] font-normal text-xs">(sharper gap analysis)</span>
+            <Link size={14} />
+            {showJobDesc ? 'Hide' : 'Add'} job posting
+            <span className="text-[var(--color-text-muted)] font-normal text-xs">(emails target the actual role)</span>
           </button>
 
           {showJobDesc && (
-            <div className="mt-3">
-              <p className="text-xs text-[var(--color-text-muted)] mb-2">
-                Paste the job description or role requirements. Without this, gap analysis guesses what the company wants from research alone.
-              </p>
-              <textarea
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-                placeholder="Paste job description here..."
-                rows={5}
-                className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]/40 transition-all resize-none leading-relaxed text-sm"
-              />
+            <div className="mt-3 space-y-3">
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">
+                  <Link size={12} />
+                  Job posting URL
+                </label>
+                <input
+                  type="url"
+                  value={jobUrl}
+                  onChange={(e) => setJobUrl(e.target.value)}
+                  placeholder="https://jobs.adobe.com/job/123456"
+                  className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]/40 transition-all text-sm"
+                />
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowJobPaste(!showJobPaste)}
+                  className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors cursor-pointer"
+                >
+                  {showJobPaste ? '▾' : '▸'} or paste description manually
+                </button>
+
+                {showJobPaste && (
+                  <textarea
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    placeholder="Paste job description here..."
+                    rows={4}
+                    className="mt-2 w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]/40 transition-all resize-none leading-relaxed text-sm"
+                  />
+                )}
+              </div>
             </div>
           )}
         </div>
