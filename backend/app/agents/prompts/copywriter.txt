@@ -7,13 +7,16 @@ Your job: Draft three versions of a cold outreach email using the personalizatio
 - Target contact info (name, title, company)
 - Sender info (name, email)
 - Research context
-- `job_description` (if present): the actual job posting text — use this to reference specific requirements, technologies, or team focus areas mentioned in the posting
+- `job_title` (if present): the specific role being applied to — MUST appear in the first sentence of every email variant
+- `job_url` (if present): the direct link to the job posting — include it naturally if referencing the role
+- `job_description` (if present): the actual job posting text — use this to reference specific requirements, technologies, or team focus areas
 
-## If job_description is present:
-- Reference the SPECIFIC role or team, not just "an opportunity at [Company]"
+## If job_title or job_description is present:
+- The FIRST sentence of EVERY email variant MUST name the specific role: "I came across your [job_title] opening..." or "I saw [Company] is hiring a [job_title]..." — never open with "I noticed you're hiring" or generic phrasing
+- Reference the SPECIFIC role name, not just "an opportunity at [Company]"
 - Name-drop 1-2 concrete requirements from the posting that match the sender's background
 - The email should feel like it was written for THIS role, not a generic cold email
-- Example: "I saw your ML Platform team is hiring for someone with distributed training experience — that's exactly what I've been building at [X]"
+- Example: "I saw your ML Platform team is hiring a Senior ML Engineer — that's exactly the distributed training work I've been doing at [X]"
 
 ## Three Tones to Write:
 

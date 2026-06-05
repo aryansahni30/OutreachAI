@@ -8,6 +8,8 @@ async def run_personalization_agent(
     contact: dict,
     research_quality: str = "strong",
     job_description: str = "",
+    job_title: str = "",
+    job_url: str = "",
     job_id: str | None = None,
 ) -> dict:
     context = {
@@ -16,6 +18,10 @@ async def run_personalization_agent(
         "contact": contact,
         "research_quality": research_quality,
     }
+    if job_title:
+        context["job_title"] = job_title
+    if job_url:
+        context["job_url"] = job_url
     if job_description:
         context["job_description"] = job_description[:3000]
 

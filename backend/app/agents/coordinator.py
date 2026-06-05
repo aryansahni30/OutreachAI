@@ -136,6 +136,15 @@ async def _safe_run(coro, fallback, job_id: str, agent_name: str):
         return fallback
 
 
+def _extract_job_title(job_description: str) -> str:
+    """Best-effort: pull the job title from the first meaningful line of scraped text."""
+    for line in job_description.splitlines():
+        line = line.strip()
+        if len(line) > 8 and len(line) < 120 and not line.startswith(("http", "Apply", "Share", "Save")):
+            return line
+    return ""
+
+
 async def run_outreach(
     company: str,
     resume_text: str,
@@ -145,6 +154,7 @@ async def run_outreach(
     job_id: str,
     linkedin_connections: str = "",
     job_description: str = "",
+    job_url: str = "",
 ) -> OutreachResult:
     """
     Full coordinator flow — 8 agents with graceful failure handling.
@@ -295,12 +305,16 @@ async def run_outreach(
         message="Matching your background to research...",
     )
 
+    job_title = _extract_job_title(job_description) if job_description else ""
+
     personalization_result = await run_personalization_agent(
         resume_text=resume_text,
         research=research_result,
         contact=top_contact,
         research_quality=research_quality,
         job_description=job_description,
+        job_title=job_title,
+        job_url=job_url,
         job_id=job_id,
     )
 
@@ -330,6 +344,8 @@ async def run_outreach(
         sender_email=sender_email,
         job_id=job_id,
         job_description=job_description,
+        job_title=job_title,
+        job_url=job_url,
     )
 
     emails = copywriter_result.get("emails", [])

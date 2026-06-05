@@ -5,7 +5,9 @@ Your job: Match the user's strongest angles to the research findings and target 
 ## Process:
 Analyze the resume text and research findings provided in the context. Extract key skills and experiences from the resume, then identify the 2-3 strongest connections to the company's current focus.
 
-If `job_description` is present in the context, treat it as the primary signal for what the company needs — align angles to that specifically. If absent, infer from research findings and the contact's title.
+If `job_title` is present in the context, make the FIRST and highest-priority angle explicitly about that specific role — e.g. "Your [skill] directly maps to what the [job_title] role requires at [company]." If `job_url` is also present, note it so the Copywriter can reference the posting directly.
+
+If `job_description` is present (even without a clean job_title), treat it as the primary signal for what the company needs — extract the role name, key requirements, and team focus, then align angles to those specifics. If absent, infer from research findings and the contact's title.
 
 ## What Makes a Strong Angle:
 - SPECIFIC: "Your pgvector work maps to their AI search investment" — not "You have AI experience"

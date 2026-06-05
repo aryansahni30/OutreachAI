@@ -58,6 +58,7 @@ async def _run_job(job_id: str, request: OutreachRequest):
             job_id=job_id,
             linkedin_connections=request.linkedin_connections,
             job_description=job_description,
+            job_url=request.job_url,
         )
         _job_results[job_id] = result.model_dump()
     except Exception as e:
